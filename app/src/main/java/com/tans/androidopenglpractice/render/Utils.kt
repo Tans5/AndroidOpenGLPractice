@@ -22,6 +22,15 @@ fun FloatArray.toGlBuffer(): Buffer {
     }
 }
 
+fun IntArray.toGlBuffer(): Buffer {
+    return ByteBuffer.allocateDirect(size * 4).let {
+        it.order(ByteOrder.nativeOrder())
+        it.asIntBuffer().put(this)
+        it.position(0)
+        it
+    }
+}
+
 fun glGenBuffers(): Int {
     val buffer = newGlIntBuffer()
     GLES31.glGenBuffers(1, buffer)

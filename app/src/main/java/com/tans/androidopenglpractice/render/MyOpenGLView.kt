@@ -19,7 +19,7 @@ class MyOpenGLView : GLSurfaceView {
 
     init {
         setEGLContextClientVersion(3)
-        shapeRender = SimpleTriangleRender()
+        shapeRender = SquareRender()
         myRenderer = MyRenderer(shapeRender, this)
         setRenderer(myRenderer)
         renderMode = RENDERMODE_CONTINUOUSLY
