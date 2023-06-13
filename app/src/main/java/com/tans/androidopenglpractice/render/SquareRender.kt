@@ -2,6 +2,7 @@ package com.tans.androidopenglpractice.render
 
 import android.opengl.GLES31
 import android.opengl.Matrix
+import android.os.SystemClock
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -58,12 +59,13 @@ class SquareRender : IShapeRender {
             val ratio = width.toFloat() / height.toFloat()
 
             // Projection
-//            val projectionMatrix = FloatArray(16)
-//            Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3.0f, 7f)
-//            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "projection"), 1, false, projectionMatrix, 0)
+            val projectionMatrix = newGlFloatMatrix()
+            Matrix.perspectiveM(projectionMatrix, 0, 45.0f, ratio, 0.1f, 100f,)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "projection"), 1, false, projectionMatrix, 0)
 
             // View
             val viewMatrix = newGlFloatMatrix()
+            Matrix.translateM(viewMatrix, 0, 0f, 0f, -3f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
             // model
@@ -72,7 +74,7 @@ class SquareRender : IShapeRender {
 
             // transform
             val transformMatrix = newGlFloatMatrix()
-            Matrix.scaleM(transformMatrix, 0, 1 / ratio, 1.0f, 1.0f)
+            Matrix.rotateM(transformMatrix, 0, ((SystemClock.uptimeMillis() / 10) % 360).toFloat(), 1f, 0f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "transform"), 1, false, transformMatrix, 0)
 
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
@@ -102,7 +104,7 @@ class SquareRender : IShapeRender {
             uniform mat4 view;
             uniform mat4 projection;
             void main() {
-                gl_Position = view * model * transform * vec4(aPos, 1.0);
+                gl_Position = projection * view * model * transform * vec4(aPos, 1.0);
             }
         """
 
