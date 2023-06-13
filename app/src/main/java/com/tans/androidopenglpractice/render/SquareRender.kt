@@ -1,13 +1,16 @@
 package com.tans.androidopenglpractice.render
 
+import android.graphics.BitmapFactory
 import android.opengl.GLES31
+import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.os.SystemClock
+import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class SquareRender : IShapeRender {
+class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
 
     override val isActive: AtomicBoolean = AtomicBoolean(false)
     override var width: Int = 0
@@ -43,11 +46,34 @@ class SquareRender : IShapeRender {
             val EBO = glGenBuffers()
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, EBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
+
+            // 纹理
+            val androidContext = openGLView.context
+            val bitmap = try {
+                androidContext.assets.open("container.jpeg").use { BitmapFactory.decodeStream(it) }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+                Log.e(logTag, "Load texture bitmap fail: ${e.message}", e)
+                null
+            }
+            var texture: Int? = null
+            if (bitmap != null) {
+                texture = glGenTexture()
+                GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+                GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_REPEAT)
+                GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_REPEAT)
+                GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
+                GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
+                GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D)
+                GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
+                bitmap.recycle()
+            }
             initData = InitData(
                 VAO = VAO,
                 VBO = VBO,
                 EBO = EBO,
-                program = program
+                program = program,
+                texture = texture
             )
         }
     }
@@ -93,7 +119,8 @@ class SquareRender : IShapeRender {
             val VAO: Int,
             val VBO: Int,
             val EBO: Int,
-            val program: Int
+            val program: Int,
+            val texture: Int?
         )
 
         private const val squareVertexRender = """#version 310 es
@@ -103,16 +130,20 @@ class SquareRender : IShapeRender {
             uniform mat4 model;
             uniform mat4 view;
             uniform mat4 projection;
+            out vec2 TexCoord;
             void main() {
                 gl_Position = projection * view * model * transform * vec4(aPos, 1.0);
+                TexCoord = aTexCoord;
             }
         """
 
         private const val squareFragmentRender = """#version 310 es
             precision highp float; // Define float precision
+            uniform sampler2D Texture;
+            in vec2 TexCoord;
             out vec4 FragColor;
             void main() {
-                FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                FragColor = texture(Texture, TexCoord);
             }
         """
     }

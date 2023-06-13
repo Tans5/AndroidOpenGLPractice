@@ -56,3 +56,10 @@ fun glGenVertexArrays(): Int {
     buffer.position(0)
     return buffer.get()
 }
+
+fun glGenTexture(): Int {
+    val buffer = newGlIntBuffer()
+    GLES31.glGenTextures(1, buffer)
+    buffer.position(0)
+    return buffer.get()
+}
