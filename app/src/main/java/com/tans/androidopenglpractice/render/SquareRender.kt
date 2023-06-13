@@ -1,6 +1,7 @@
 package com.tans.androidopenglpractice.render
 
 import android.opengl.GLES31
+import android.opengl.Matrix
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -54,6 +55,26 @@ class SquareRender : IShapeRender {
         val initData = this.initData
         if (initData != null) {
             GLES31.glUseProgram(initData.program)
+            val ratio = width.toFloat() / height.toFloat()
+
+            // Projection
+//            val projectionMatrix = FloatArray(16)
+//            Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3.0f, 7f)
+//            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "projection"), 1, false, projectionMatrix, 0)
+
+            // View
+            val viewMatrix = newGlFloatMatrix()
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
+
+            // model
+            val modelMatrix = newGlFloatMatrix()
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "model"), 1, false, modelMatrix, 0)
+
+            // transform
+            val transformMatrix = newGlFloatMatrix()
+            Matrix.scaleM(transformMatrix, 0, 1 / ratio, 1.0f, 1.0f)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "transform"), 1, false, transformMatrix, 0)
+
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
         }
@@ -76,8 +97,12 @@ class SquareRender : IShapeRender {
         private const val squareVertexRender = """#version 310 es
             layout (location = 0) in vec3 aPos;
             layout (location = 1) in vec2 aTexCoord;
+            uniform mat4 transform;
+            uniform mat4 model;
+            uniform mat4 view;
+            uniform mat4 projection;
             void main() {
-                gl_Position = vec4(aPos, 1.0);
+                gl_Position = view * model * transform * vec4(aPos, 1.0);
             }
         """
 

@@ -13,7 +13,19 @@ fun newGlIntBuffer(): IntBuffer {
     }
 }
 
-fun FloatArray.toGlBuffer(): Buffer {
+fun newGlFloatMatrix(n: Int = 4): FloatArray {
+    return FloatArray(n * n) {
+        val x = it / n
+        val y = it % n
+        if (x == y) {
+            1.0f
+        } else {
+            0.0f
+        }
+    }
+}
+
+fun FloatArray.toGlBuffer(): ByteBuffer {
     return ByteBuffer.allocateDirect(size * 4).let {
         it.order(ByteOrder.nativeOrder())
         it.asFloatBuffer().put(this)
@@ -22,7 +34,7 @@ fun FloatArray.toGlBuffer(): Buffer {
     }
 }
 
-fun IntArray.toGlBuffer(): Buffer {
+fun IntArray.toGlBuffer(): ByteBuffer {
     return ByteBuffer.allocateDirect(size * 4).let {
         it.order(ByteOrder.nativeOrder())
         it.asIntBuffer().put(this)
