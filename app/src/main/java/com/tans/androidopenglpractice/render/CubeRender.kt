@@ -127,17 +127,35 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
             Matrix.translateM(viewMatrix, 0, 0f, 0f, -3f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
-            // model
-            val modelMatrix = newGlFloatMatrix()
-            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "model"), 1, false, modelMatrix, 0)
-
             // transform
             val transformMatrix = newGlFloatMatrix()
             Matrix.rotateM(transformMatrix, 0, ((SystemClock.uptimeMillis() / 10) % 360).toFloat(), 0.5f, 1.0f, 0.0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "transform"), 1, false, transformMatrix, 0)
 
-            GLES31.glBindVertexArray(initData.VAO)
-            GLES31.glDrawArrays(GLES31.GL_TRIANGLES, 0, 36)
+            val cubePositions = listOf<FloatArray>(
+                floatArrayOf(0f, 0f, 0f),
+                floatArrayOf(2f, 5f, -15f),
+                floatArrayOf(-1.5f, -2.2f, -2.5f),
+                floatArrayOf(-3.8f, -2.0f, -12.3f),
+                floatArrayOf(2.4f, -0.4f, -3.5f),
+                floatArrayOf(-1.7f,  3.0f, -7.5f),
+                floatArrayOf(1.3f, -2.0f, -2.5f),
+                floatArrayOf(1.5f,  2.0f, -2.5f),
+                floatArrayOf(1.5f,  0.2f, -1.5f),
+                floatArrayOf(-1.3f,  1.0f, -1.5f),
+            )
+
+            for ((i, p) in cubePositions.withIndex()) {
+                // model
+                val modelMatrix = newGlFloatMatrix()
+                Matrix.translateM(modelMatrix, 0, p[0], p[1], p[2])
+                val angle = 20.0f * i
+                Matrix.rotateM(modelMatrix, 0, angle, 1.0f, 0.3f, 0.5f)
+                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "model"), 1, false, modelMatrix, 0)
+
+                GLES31.glBindVertexArray(initData.VAO)
+                GLES31.glDrawArrays(GLES31.GL_TRIANGLES, 0, 36)
+            }
         }
     }
 
