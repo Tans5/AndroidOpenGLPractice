@@ -8,6 +8,8 @@ import android.os.SystemClock
 import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.cos
+import kotlin.math.sin
 
 class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
 
@@ -64,7 +66,10 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
                 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
                 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
                 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+
+                // Android 中要多加一个点，否者纹理渲染出错，不知道什么原因。
+                0f,  0f, -0f,  0f, 0f,
             )
             val VAO = glGenVertexArrays()
             GLES31.glBindVertexArray(VAO)
@@ -116,6 +121,7 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
             GLES31.glUseProgram(initData.program)
 
             val ratio = width.toFloat() / height.toFloat()
+            val time = SystemClock.uptimeMillis()
 
             // Projection
             val projectionMatrix = newGlFloatMatrix()
@@ -124,12 +130,15 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
 
             // View
             val viewMatrix = newGlFloatMatrix()
-            Matrix.translateM(viewMatrix, 0, 0f, 0f, -3f)
+            val radius = 10f
+            val eyeX = sin(Math.toRadians(time.toDouble() / 20f)) * radius
+            val eyeZ = cos(Math.toRadians(time.toDouble() / 20f)) * radius
+            Matrix.setLookAtM(viewMatrix, 0, eyeX.toFloat(), 0f, eyeZ.toFloat(), 0f, 0f, 0f, 0f, 1f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
             // transform
             val transformMatrix = newGlFloatMatrix()
-            Matrix.rotateM(transformMatrix, 0, ((SystemClock.uptimeMillis() / 10) % 360).toFloat(), 0.5f, 1.0f, 0.0f)
+            Matrix.rotateM(transformMatrix, 0, ((time / 10) % 360).toFloat(), 0.5f, 1.0f, 0.0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "transform"), 1, false, transformMatrix, 0)
 
             val cubePositions = listOf<FloatArray>(
