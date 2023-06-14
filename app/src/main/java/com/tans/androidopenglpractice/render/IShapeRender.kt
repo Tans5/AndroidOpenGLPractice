@@ -16,18 +16,18 @@ interface IShapeRender {
 
     val logTag: String
 
-    fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
+    fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         isActive.set(true)
     }
 
-    fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
+    fun onSurfaceChanged(owner: MyOpenGLView, gl: GL10, width: Int, height: Int) {
         this.width = width
         this.height = height
     }
 
-    fun onDrawFrame(gl: GL10)
+    fun onDrawFrame(owner: MyOpenGLView, gl: GL10)
 
-    fun onViewDestroyed() {
+    fun onViewDestroyed(owner: MyOpenGLView) {
         isActive.set(false)
     }
 

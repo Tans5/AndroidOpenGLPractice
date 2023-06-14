@@ -7,11 +7,12 @@ import android.opengl.Matrix
 import android.os.SystemClock
 import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.cos
 import kotlin.math.sin
 
-class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
+class CubeRender : IShapeRender {
 
     override val isActive: AtomicBoolean = AtomicBoolean(false)
     override var width: Int = 0
@@ -20,8 +21,8 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
 
     private var initData: InitData? = null
 
-    override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
-        super.onSurfaceChanged(gl, width, height)
+    override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
+        super.onSurfaceCreated(owner, gl, config)
         val program = compileShaderProgram(cubeVertexRender, cubeFragmentRender)
         if (program != null) {
             // 一个正方体 6 个面；每个面由 2 个三角形组成；每个三角形 3 个点组成；所以总共 36 个点。
@@ -81,7 +82,7 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
             GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
             GLES31.glEnableVertexAttribArray(1)
 
-            val androidContext = openGLView.context
+            val androidContext = owner.context
             val bitmap = try {
                 androidContext.assets.open("container.jpeg").use { BitmapFactory.decodeStream(it) }
             } catch (e: Throwable) {
@@ -110,7 +111,7 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
         }
     }
 
-    override fun onDrawFrame(gl: GL10) {
+    override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
 
@@ -168,8 +169,9 @@ class CubeRender(private val openGLView: MyOpenGLView) : IShapeRender {
         }
     }
 
-    override fun onViewDestroyed() {
-        super.onViewDestroyed()
+    override fun onViewDestroyed(owner: MyOpenGLView) {
+        super.onViewDestroyed(owner)
+        initData = null
     }
 
 

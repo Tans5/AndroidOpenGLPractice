@@ -15,8 +15,8 @@ class SimpleTriangleRender : IShapeRender {
 
     override val logTag: String = "SimpleTriangleRender"
 
-    override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
-        super.onSurfaceCreated(gl, config)
+    override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
+        super.onSurfaceCreated(owner, gl, config)
         val program = compileShaderProgram(triangleVertexShader, triangleFragmentShader)
         if (program != null) {
             val VBO = glGenBuffers()
@@ -45,7 +45,7 @@ class SimpleTriangleRender : IShapeRender {
         }
     }
 
-    override fun onDrawFrame(gl: GL10) {
+    override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
             GLES31.glUseProgram(initData.program)
@@ -54,8 +54,9 @@ class SimpleTriangleRender : IShapeRender {
         }
     }
 
-    override fun onViewDestroyed() {
-        super.onViewDestroyed()
+    override fun onViewDestroyed(owner: MyOpenGLView) {
+        super.onViewDestroyed(owner)
+        this.initData = null
     }
 
     companion object {

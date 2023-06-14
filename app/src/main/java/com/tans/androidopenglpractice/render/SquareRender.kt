@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
+class SquareRender : IShapeRender {
 
     override val isActive: AtomicBoolean = AtomicBoolean(false)
     override var width: Int = 0
@@ -19,8 +19,8 @@ class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
 
     private var initData: InitData? = null
 
-    override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
-        super.onSurfaceCreated(gl, config)
+    override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
+        super.onSurfaceCreated(owner, gl, config)
         val program = compileShaderProgram(squareVertexRender, squareFragmentRender)
         if (program != null) {
             val vertices = floatArrayOf(
@@ -48,7 +48,7 @@ class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
 
             // 纹理
-            val androidContext = openGLView.context
+            val androidContext = owner.context
             val bitmap = try {
                 androidContext.assets.open("container.jpeg").use { BitmapFactory.decodeStream(it) }
             } catch (e: Throwable) {
@@ -78,7 +78,7 @@ class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
         }
     }
 
-    override fun onDrawFrame(gl: GL10) {
+    override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
             GLES31.glUseProgram(initData.program)
@@ -108,8 +108,9 @@ class SquareRender(private val openGLView: MyOpenGLView) : IShapeRender {
         }
     }
 
-    override fun onViewDestroyed() {
-        super.onViewDestroyed()
+    override fun onViewDestroyed(owner: MyOpenGLView) {
+        super.onViewDestroyed(owner)
+        initData = null
     }
 
 

@@ -3,6 +3,7 @@ package com.tans.androidopenglpractice.render
 import android.content.Context
 import android.opengl.GLES31
 import android.opengl.GLSurfaceView
+import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import javax.microedition.khronos.egl.EGLConfig
@@ -15,47 +16,94 @@ class MyOpenGLView : GLSurfaceView {
 
     private val myRenderer: MyRenderer
 
-    private val shapeRender: IShapeRender
+    private var createdCache: SurfaceCreatedCache? = null
+
+    private var sizeCache: SurfaceSizeCache? = null
+
+    var shapeRender: IShapeRender?
+        set(value) {
+            mainThread {
+                this.shapeRender?.onViewDestroyed(this)
+                val ca = createdCache
+                if (ca != null) {
+                    value?.onSurfaceCreated(this, ca.gl, ca.config)
+                    sizeCache?.let {
+                        value?.onSurfaceChanged(this, it.gl, it.width, it.height)
+                    }
+                }
+                field = value
+            }
+        }
 
     init {
         setEGLContextClientVersion(3)
-        shapeRender = CubeRender(this)
-        myRenderer = MyRenderer(shapeRender, this)
+        shapeRender = CubeRender()
+        myRenderer = MyRenderer(this)
         setRenderer(myRenderer)
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
-    internal class MyRenderer(private val shapeRender: IShapeRender, private val view: MyOpenGLView) : Renderer {
+    private fun mainThread(callback: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            callback()
+        } else {
+            post { callback() }
+        }
+    }
+
+    private class MyRenderer(private val owner: MyOpenGLView) : Renderer {
 
         override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
             GLES31.glClearColor(0.3f, 0.3f, 0.3f, 1.0f)
             val glVersion = gl.glGetString(GLES31.GL_VERSION)
             Log.d(TAG, "Support OpenGL ES version: $glVersion")
-            shapeRender.onSurfaceCreated(gl, config)
-            view.requestRender()
+            val render = owner.shapeRender
+            if (render != null) {
+                render.onSurfaceCreated(owner, gl, config)
+                owner.requestRender()
+            }
+            owner.mainThread {
+                owner.createdCache = SurfaceCreatedCache(gl, config)
+            }
         }
 
         override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
             GLES31.glViewport(0, 0, width, height)
-            if (shapeRender.isActive.get()) {
-                shapeRender.onSurfaceChanged(gl, width, height)
+            val render = owner.shapeRender
+            if (render?.isActive?.get() == true) {
+                render.onSurfaceChanged(owner, gl, width, height)
+            }
+            owner.mainThread {
+                owner.sizeCache = SurfaceSizeCache(gl, width, height)
             }
         }
 
         override fun onDrawFrame(gl: GL10) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
-            if (shapeRender.isActive.get()) {
-                shapeRender.onDrawFrame(gl)
+            val render = owner.shapeRender
+            if (render?.isActive?.get() == true) {
+                render.onDrawFrame(owner, gl)
             }
         }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        shapeRender.onViewDestroyed()
+        shapeRender?.onViewDestroyed(this)
+        createdCache = null
+        sizeCache = null
     }
 
     companion object {
+        private data class SurfaceCreatedCache(
+            val gl: GL10,
+            val config: EGLConfig
+        )
+        private data class SurfaceSizeCache(
+            val gl: GL10,
+            val width: Int,
+            val height: Int
+        )
         private const val TAG = "MyOpenGLView"
     }
 }
