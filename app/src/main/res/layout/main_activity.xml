@@ -2,14 +2,53 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#666666"
+    android:fitsSystemWindows="false"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.tans.androidopenglpractice.render.MyOpenGLView
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/center_horizontal_line"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.5"/>
+
+    <com.tans.androidopenglpractice.render.MyOpenGLView
+        android:id="@+id/gl_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fitsSystemWindows="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/center_horizontal_line" />
+
+    <com.google.android.flexbox.FlexboxLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@id/center_horizontal_line">
 
+        <Button
+            android:id="@+id/simple_triangle_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Simple triangle" />
+
+        <Button
+            android:id="@+id/square_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Square" />
+
+        <Button
+            android:id="@+id/cube_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cube" />
+
+    </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

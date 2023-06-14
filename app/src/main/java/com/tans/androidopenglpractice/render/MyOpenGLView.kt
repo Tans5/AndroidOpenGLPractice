@@ -14,32 +14,21 @@ class MyOpenGLView : GLSurfaceView {
 
     constructor(context: Context, attrs: AttributeSet?): super(context, attrs)
 
-    private val myRenderer: MyRenderer
-
     private var createdCache: SurfaceCreatedCache? = null
 
     private var sizeCache: SurfaceSizeCache? = null
 
-    var shapeRender: IShapeRender?
+    var shapeRender: IShapeRender? = null
         set(value) {
             mainThread {
                 this.shapeRender?.onViewDestroyed(this)
-                val ca = createdCache
-                if (ca != null) {
-                    value?.onSurfaceCreated(this, ca.gl, ca.config)
-                    sizeCache?.let {
-                        value?.onSurfaceChanged(this, it.gl, it.width, it.height)
-                    }
-                }
                 field = value
             }
         }
 
     init {
         setEGLContextClientVersion(3)
-        shapeRender = CubeRender()
-        myRenderer = MyRenderer(this)
-        setRenderer(myRenderer)
+        setRenderer(MyRenderer(this))
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
@@ -70,8 +59,16 @@ class MyOpenGLView : GLSurfaceView {
         override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
             GLES31.glViewport(0, 0, width, height)
             val render = owner.shapeRender
-            if (render?.isActive?.get() == true) {
-                render.onSurfaceChanged(owner, gl, width, height)
+            if (render != null) {
+                if (render.isActive.get()) {
+                    render.onSurfaceChanged(owner, gl, width, height)
+                } else {
+                    val ca = owner.createdCache
+                    if (ca != null) {
+                        render.onSurfaceCreated(owner, ca.gl, ca.config)
+                        render.onSurfaceChanged(owner, gl, width, height)
+                    }
+                }
             }
             owner.mainThread {
                 owner.sizeCache = SurfaceSizeCache(gl, width, height)
@@ -81,8 +78,20 @@ class MyOpenGLView : GLSurfaceView {
         override fun onDrawFrame(gl: GL10) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             val render = owner.shapeRender
-            if (render?.isActive?.get() == true) {
-                render.onDrawFrame(owner, gl)
+            if (render != null) {
+                if (render.isActive.get()) {
+                    render.onDrawFrame(owner, gl)
+                } else {
+                    val ca = owner.createdCache
+                    if (ca != null) {
+                        render.onSurfaceCreated(owner, ca.gl, ca.config)
+                        val sa = owner.sizeCache
+                        if (sa != null) {
+                            render.onSurfaceChanged(owner, sa.gl, sa.width, sa.height)
+                        }
+                        render.onDrawFrame(owner, gl)
+                    }
+                }
             }
         }
     }
