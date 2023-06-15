@@ -1,6 +1,8 @@
 package com.tans.androidopenglpractice.render
 
+import android.graphics.BitmapFactory
 import android.opengl.GLES31
+import android.opengl.GLUtils
 import android.opengl.Matrix
 import androidx.camera.core.ImageProxy
 import java.nio.ByteBuffer
@@ -35,10 +37,6 @@ class CameraRender : IShapeRender {
             GLES31.glBindVertexArray(VAO)
             val VBO = glGenBuffers()
             GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, VBO)
-//            GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 5 * 4, 0)
-//            GLES31.glEnableVertexAttribArray(0)
-//            GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
-//            GLES31.glEnableVertexAttribArray(1)
             val EBO = glGenBuffers()
 
             // 纹理
@@ -92,16 +90,22 @@ class CameraRender : IShapeRender {
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.texture)
             val nv21Bytes = ByteArray(imageWidth * imageHeight + imageWidth * imageHeight / 2)
             yuv420888toNv21(imageProxy, nv21Bytes)
-            val rgbBytes = ByteArray(imageWidth * imageHeight * 3)
-            nv21ToRgb(rgb = rgbBytes, nv21 = nv21Bytes, width = imageWidth, height = imageHeight)
-            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGB, imageWidth, imageHeight, 0,
-            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
+            val jpeg = nv21ToJpeg(nv21Bytes, imageWidth, imageHeight, null, 50)
+            val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
+            bitmap.recycle()
+//            val rgbBytes = ByteArray(imageWidth * imageHeight * 3)
+//            nv21ToRgb(rgb = rgbBytes, nv21 = nv21Bytes, width = imageWidth, height = imageHeight)
+//            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGB, imageWidth, imageHeight, 0,
+//            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
             imageProxy.close()
 
             val renderRatio = width.toFloat() / height.toFloat()
             // View
             val viewMatrix = newGlFloatMatrix()
-            Matrix.scaleM(viewMatrix, 0, renderRatio, 1.0f, 1.0f)
+            Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
+            Matrix.rotateM(viewMatrix, 0, - imageProxy.imageInfo.rotationDegrees.toFloat(), 0f, 0f, 1f)
+            // Matrix.rotateM(viewMatrix, 0, 180f, 0f, 0f, 1f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
             // model

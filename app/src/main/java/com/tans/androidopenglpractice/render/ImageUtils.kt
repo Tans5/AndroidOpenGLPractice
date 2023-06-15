@@ -7,7 +7,7 @@ import androidx.annotation.IntRange
 import androidx.camera.core.ImageProxy
 import java.io.ByteArrayOutputStream
 
-fun yuv420888toNv21(image: ImageProxy, nv21: ByteArray): ByteArray {
+fun yuv420888toNv21(image: ImageProxy, nv21: ByteArray) {
     if (image.format != ImageFormat.YUV_420_888) {
         error("Image format is not YUV_420_888.")
     }
@@ -54,13 +54,12 @@ fun yuv420888toNv21(image: ImageProxy, nv21: ByteArray): ByteArray {
             uLineBufferPosition += uPixelStride
         }
     }
-    return nv21
 }
 
 fun nv21ToJpeg(
     nv21: ByteArray, width: Int, height: Int,
     cropRect: Rect?, @IntRange(from = 1, to = 100) jpegQuality: Int
-): ByteArray? {
+): ByteArray {
     val out = ByteArrayOutputStream()
     val yuv = YuvImage(nv21, ImageFormat.NV21, width, height, null)
     val success = yuv.compressToJpeg(
@@ -77,6 +76,7 @@ fun nv21ToRgb(rgb: ByteArray, nv21: ByteArray, width: Int, height: Int) {
     val frameSize = width * height
     var j = 0
     var yp = 0
+    var position = 0
     while (j < height) {
         var uvp = frameSize + (j shr 1) * width
         var u = 0
@@ -96,9 +96,9 @@ fun nv21ToRgb(rgb: ByteArray, nv21: ByteArray, width: Int, height: Int) {
             if (r < 0) r = 0 else if (r > 262143) r = 262143
             if (g < 0) g = 0 else if (g > 262143) g = 262143
             if (b < 0) b = 0 else if (b > 262143) b = 262143
-            rgb[yp] = r.toByte()
-            rgb[yp + 1] = g.toByte()
-            rgb[yp + 2] = b.toByte()
+            rgb[position ++] = (r and 0x00_00_00_FF).toByte()
+            rgb[position ++] = (g and 0x00_00_00_FF).toByte()
+            rgb[position ++] = (b and 0x00_00_00_FF).toByte()
             i++
             yp++
         }
