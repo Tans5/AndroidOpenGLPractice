@@ -1,11 +1,9 @@
 package com.tans.androidopenglpractice.render
 
-import android.graphics.BitmapFactory
 import android.opengl.GLES31
-import android.opengl.GLUtils
 import android.opengl.Matrix
 import androidx.camera.core.ImageProxy
-import androidx.camera.core.internal.utils.ImageUtil
+import java.nio.ByteBuffer
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
@@ -92,10 +90,12 @@ class CameraRender : IShapeRender {
             GLES31.glEnableVertexAttribArray(1)
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.texture)
-            val jpegByteArray = ImageUtil.yuvImageToJpegByteArray(imageProxy, null , 50)
-            val bitmap = BitmapFactory.decodeByteArray(jpegByteArray, 0, jpegByteArray.size)
-            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
-            bitmap.recycle()
+            val nv21Bytes = ByteArray(imageWidth * imageHeight + imageWidth * imageHeight / 2)
+            yuv420888toNv21(imageProxy, nv21Bytes)
+            val rgbBytes = ByteArray(imageWidth * imageHeight * 3)
+            nv21ToRgb(rgb = rgbBytes, nv21 = nv21Bytes, width = imageWidth, height = imageHeight)
+            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGB, imageWidth, imageHeight, 0,
+            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
             imageProxy.close()
 
             val renderRatio = width.toFloat() / height.toFloat()
