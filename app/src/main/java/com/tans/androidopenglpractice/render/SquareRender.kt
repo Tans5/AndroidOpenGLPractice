@@ -76,11 +76,13 @@ class SquareRender : IShapeRender {
                 texture = texture
             )
         }
+        owner.requestRender()
     }
 
     override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
+            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             GLES31.glUseProgram(initData.program)
             val ratio = width.toFloat() / height.toFloat()
 
@@ -106,6 +108,7 @@ class SquareRender : IShapeRender {
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
         }
+        owner.requestRender()
     }
 
     override fun onViewDestroyed(owner: MyOpenGLView) {

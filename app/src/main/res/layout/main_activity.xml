@@ -26,7 +26,8 @@
     <com.google.android.flexbox.FlexboxLayout
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:orientation="horizontal"
+        android:orientation="vertical"
+        app:flexWrap="wrap"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -36,19 +37,28 @@
             android:id="@+id/simple_triangle_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:text="Simple triangle" />
 
         <Button
             android:id="@+id/square_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:text="Square" />
 
         <Button
             android:id="@+id/cube_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLines="1"
             android:text="Cube" />
 
+        <Button
+            android:id="@+id/camera_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="Camera"/>
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

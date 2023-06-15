@@ -23,13 +23,14 @@ class MyOpenGLView : GLSurfaceView {
             mainThread {
                 this.shapeRender?.onViewDestroyed(this)
                 field = value
+                requestRender()
             }
         }
 
     init {
         setEGLContextClientVersion(3)
         setRenderer(MyRenderer(this))
-        renderMode = RENDERMODE_CONTINUOUSLY
+        renderMode = RENDERMODE_WHEN_DIRTY
     }
 
     private fun mainThread(callback: () -> Unit) {
@@ -76,7 +77,6 @@ class MyOpenGLView : GLSurfaceView {
         }
 
         override fun onDrawFrame(gl: GL10) {
-            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             val render = owner.shapeRender
             if (render != null) {
                 if (render.isActive.get()) {

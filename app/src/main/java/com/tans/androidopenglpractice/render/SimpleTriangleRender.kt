@@ -48,6 +48,7 @@ class SimpleTriangleRender : IShapeRender {
     override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
+            GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             GLES31.glUseProgram(initData.program)
             GLES31.glBindVertexArray(initData.VBO)
             GLES31.glDrawArrays(GLES31.GL_TRIANGLES, 0, 3)

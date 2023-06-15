@@ -114,10 +114,9 @@ class CubeRender : IShapeRender {
     override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
         if (initData != null) {
-
+            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT or GLES31.GL_COLOR_BUFFER_BIT)
             // Z 缓冲
             GLES31.glEnable(GLES31.GL_DEPTH_TEST)
-            GLES31.glClear(GLES31.GL_DEPTH_BUFFER_BIT or GLES31.GL_COLOR_BUFFER_BIT)
 
             GLES31.glUseProgram(initData.program)
 
@@ -167,6 +166,7 @@ class CubeRender : IShapeRender {
                 GLES31.glDrawArrays(GLES31.GL_TRIANGLES, 0, 36)
             }
         }
+        owner.requestRender()
     }
 
     override fun onViewDestroyed(owner: MyOpenGLView) {
