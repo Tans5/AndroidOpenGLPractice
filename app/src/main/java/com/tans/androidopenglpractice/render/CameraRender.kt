@@ -1,6 +1,5 @@
 package com.tans.androidopenglpractice.render
 
-import android.graphics.BitmapFactory
 import android.opengl.GLES31
 import android.opengl.GLUtils
 import android.opengl.Matrix
@@ -65,8 +64,8 @@ class CameraRender : IShapeRender {
         if (initData != null && imageProxy != null) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             GLES31.glUseProgram(initData.program)
-            val imageWidth = imageProxy.width
-            val imageHeight = imageProxy.height
+            val imageWidth = imageProxy.cropRect.width()
+            val imageHeight = imageProxy.cropRect.height()
             val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
             val textureTransform = android.graphics.Matrix()
             textureTransform.setRotate(- imageProxy.imageInfo.rotationDegrees.toFloat(), 0.5f, 0.5f)
@@ -107,10 +106,7 @@ class CameraRender : IShapeRender {
             GLES31.glEnableVertexAttribArray(1)
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.texture)
-            val nv21Bytes = ByteArray(imageWidth * imageHeight + imageWidth * imageHeight / 2)
-            yuv420888toNv21(imageProxy, nv21Bytes)
-            val jpeg = nv21ToJpeg(nv21Bytes, imageWidth, imageHeight, null, 50)
-            val bitmap = BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
+            val bitmap = imageProxy.toBitmap()
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
             bitmap.recycle()
 //            val rgbBytes = ByteArray(imageWidth * imageHeight * 3)
