@@ -5,7 +5,6 @@ import android.opengl.GLES31
 import android.opengl.GLUtils
 import android.opengl.Matrix
 import androidx.camera.core.ImageProxy
-import java.nio.ByteBuffer
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
@@ -67,21 +66,39 @@ class CameraRender : IShapeRender {
             val imageWidth = imageProxy.width
             val imageHeight = imageProxy.height
             val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
-            val xMin = imageRatio * -1f
-            val xMax = imageRatio * 1f
+            val textureTransform = android.graphics.Matrix()
+            textureTransform.setRotate(- imageProxy.imageInfo.rotationDegrees.toFloat(), 0.5f, 0.5f)
+            val textureTopLeft = floatArrayOf(0.0f, 0.0f)
+            val textureBottomLeft = floatArrayOf(0.0f, 1.0f)
+            val textureTopRight = floatArrayOf(1.0f, 0.0f)
+            val textureBottomRight = floatArrayOf(1.0f, 1.0f)
+            textureTransform.mapPoints(textureTopLeft)
+            textureTransform.mapPoints(textureBottomLeft)
+            textureTransform.mapPoints(textureTopRight)
+            textureTransform.mapPoints(textureBottomRight)
+            val positionRatio = when (imageProxy.imageInfo.rotationDegrees) {
+                in 0 .. 90 -> 1 / imageRatio
+                in 90 .. 180 -> imageRatio
+                in 270 .. 360 -> 1 / imageRatio
+                else -> imageRatio
+            }
+            val xMin = -1f * positionRatio
+            val xMax = 1f * positionRatio
             val yMin = -1f
             val yMax = 1f
             val vertices = floatArrayOf(
                 // 坐标           // 纹理坐标
                 // 坐标(position 0)   // 纹理坐标
-                xMax, yMax, 0.0f,    1.0f, 0.0f,   // 右上角
-                xMax, yMin, 0.0f,   1.0f, 1.0f,   // 右下角
-                xMin, yMin, 0.0f,  0.0f, 1.0f,   // 左下角
-                xMin, yMax, 0.0f,   0.0f, 0.0f    // 左上角
+                xMax, yMax, 0.0f,    textureTopRight[0], textureTopRight[1],   // 右上角
+                xMax, yMin, 0.0f,   textureBottomRight[0], textureBottomRight[1],   // 右下角
+                xMin, yMin, 0.0f,  textureBottomLeft[0], textureBottomLeft[1],   // 左下角
+                xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
+                // 多加一个废弃点.
+                0.0f
             )
             GLES31.glBindVertexArray(initData.VAO)
             GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
-            GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
+            GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 5 * 4, 0)
             GLES31.glEnableVertexAttribArray(0)
             GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
@@ -100,12 +117,11 @@ class CameraRender : IShapeRender {
 //            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
             imageProxy.close()
 
-            val renderRatio = width.toFloat() / height.toFloat()
+            val renderRatio = height.toFloat() / width.toFloat()
             // View
             val viewMatrix = newGlFloatMatrix()
-            Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
-            Matrix.rotateM(viewMatrix, 0, - imageProxy.imageInfo.rotationDegrees.toFloat(), 0f, 0f, 1f)
-            // Matrix.rotateM(viewMatrix, 0, 180f, 0f, 0f, 1f)
+            Matrix.scaleM(viewMatrix, 0, renderRatio, 1.0f, 1.0f)
+            Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
             // model
@@ -121,7 +137,7 @@ class CameraRender : IShapeRender {
                 0, 2, 3 // 第二个三角形
             )
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
-            GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
+            GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
         }
     }

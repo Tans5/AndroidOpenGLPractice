@@ -21,17 +21,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/center_horizontal_line" />
+        app:layout_constraintBottom_toTopOf="@id/flex_layout" />
 
     <com.google.android.flexbox.FlexboxLayout
+        android:id="@+id/flex_layout"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         app:flexWrap="wrap"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="@id/center_horizontal_line">
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <Button
             android:id="@+id/simple_triangle_bt"
