@@ -61,6 +61,20 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                 findViewById<Button>(R.id.camera_bt).setOnClickListener {
                     glView.shapeRender = CameraRender()
                 }
+
+                findViewById<Button>(R.id.cam_crop_bt).setOnClickListener {
+                    val render = glView.shapeRender
+                    if (render is CameraRender) {
+                        render.scaleType = CameraRender.Companion.ScaleType.CenterCrop
+                    }
+                }
+
+                findViewById<Button>(R.id.cam_fit_bt).setOnClickListener {
+                    val render = glView.shapeRender
+                    if (render is CameraRender) {
+                        render.scaleType = CameraRender.Companion.ScaleType.CenterFit
+                    }
+                }
             }
         }
 

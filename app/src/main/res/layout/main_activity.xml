@@ -60,5 +60,17 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:text="Camera"/>
+
+        <Button
+            android:id="@+id/cam_crop_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cam Crop"/>
+
+        <Button
+            android:id="@+id/cam_fit_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cam Fit"/>
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

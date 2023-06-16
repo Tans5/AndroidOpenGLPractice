@@ -27,6 +27,8 @@ class CameraRender : IShapeRender {
 
     private var owner: MyOpenGLView? = null
 
+    var scaleType: ScaleType = ScaleType.CenterCrop
+
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
@@ -121,16 +123,31 @@ class CameraRender : IShapeRender {
             // View
             val viewMatrix = newGlFloatMatrix()
             Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
-            // 裁剪模式：中心显示不裁剪
-            if (renderRatio < positionRatio) {
-                // width < height
-                Matrix.scaleM(
-                    viewMatrix,
-                    0,
-                    renderRatio / positionRatio,
-                    renderRatio / positionRatio,
-                    1.0f
-                )
+            when (scaleType) {
+                ScaleType.CenterFit -> {
+                    if (renderRatio < positionRatio) {
+                        // width < height
+                        Matrix.scaleM(
+                            viewMatrix,
+                            0,
+                            renderRatio / positionRatio,
+                            renderRatio / positionRatio,
+                            1.0f
+                        )
+                    }
+                }
+                ScaleType.CenterCrop -> {
+                    if (renderRatio > positionRatio) {
+                        // width > height
+                        Matrix.scaleM(
+                            viewMatrix,
+                            0,
+                            renderRatio / positionRatio,
+                            renderRatio / positionRatio,
+                            1.0f
+                        )
+                    }
+                }
             }
 
             // 镜像显示
@@ -169,6 +186,11 @@ class CameraRender : IShapeRender {
     }
 
     companion object {
+
+        enum class ScaleType {
+            CenterFit,
+            CenterCrop
+        }
 
         private data class InitData(
             val VAO: Int,
