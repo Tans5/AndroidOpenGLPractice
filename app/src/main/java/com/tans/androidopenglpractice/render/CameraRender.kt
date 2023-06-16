@@ -117,10 +117,23 @@ class CameraRender : IShapeRender {
 //            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
             imageProxy.close()
 
-            val renderRatio = height.toFloat() / width.toFloat()
+            val renderRatio = width.toFloat() / height.toFloat()
             // View
             val viewMatrix = newGlFloatMatrix()
-            Matrix.scaleM(viewMatrix, 0, renderRatio, 1.0f, 1.0f)
+            Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
+            // 裁剪模式：中心显示不裁剪
+            if (renderRatio < positionRatio) {
+                // width < height
+                Matrix.scaleM(
+                    viewMatrix,
+                    0,
+                    renderRatio / positionRatio,
+                    renderRatio / positionRatio,
+                    1.0f
+                )
+            }
+
+            // 镜像显示
             Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
 
