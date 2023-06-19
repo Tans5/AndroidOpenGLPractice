@@ -109,10 +109,9 @@ class CameraRender : IShapeRender {
             val bitmap = imageProxy.toBitmap()
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
             bitmap.recycle()
-//            val rgbBytes = ByteArray(imageWidth * imageHeight * 3)
-//            nv21ToRgb(rgb = rgbBytes, nv21 = nv21Bytes, width = imageWidth, height = imageHeight)
-//            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGB, imageWidth, imageHeight, 0,
-//            GLES31.GL_RGB, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbBytes))
+//            val rgbaBytes = ByteArray(imageWidth * imageHeight * 4)
+//            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, imageWidth, imageHeight, 0,
+//            GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbaBytes))
             imageProxy.close()
 
             val renderRatio = width.toFloat() / height.toFloat()

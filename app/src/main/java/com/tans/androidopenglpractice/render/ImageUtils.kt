@@ -138,6 +138,57 @@ fun rgba8888ToBitmap(image: ImageProxy): Bitmap {
     return bitmap
 }
 
+fun ImageProxy.toRgba(outputBuffer: ByteArray) {
+    when (format) {
+        PixelFormat.RGBA_8888 -> {
+            assert(format == PixelFormat.RGBA_8888)
+            val plane = this.planes[0]
+            plane.buffer.get(outputBuffer)
+        }
+        ImageFormat.YUV_420_888 -> {
+            val width = cropRect.width()
+            val height = cropRect.height()
+            val yuvBytes = yuv420888ToNv21(this)
+            nv21ToRgba(outputBuffer, yuvBytes, width, height)
+        }
+    }
+}
+
+fun nv21ToRgba(rgba: ByteArray, yuv: ByteArray, width: Int, height: Int) {
+    val frameSize = width * height
+    val ii = 0
+    val ij = 0
+    val di = +1
+    val dj = +1
+    var a = 0
+    var i = 0
+    var ci = ii
+    while (i < height) {
+        var j = 0
+        var cj = ij
+        while (j < width) {
+            var y = 0xff and yuv[ci * width + cj].toInt()
+            val v = 0xff and yuv[frameSize + (ci shr 1) * width + (cj and 1.inv()) + 0].toInt()
+            val u = 0xff and yuv[frameSize + (ci shr 1) * width + (cj and 1.inv()) + 1].toInt()
+            y = if (y < 16) 16 else y
+            var r = (1.164f * (y - 16) + 1.596f * (v - 128)).toInt()
+            var g = (1.164f * (y - 16) - 0.813f * (v - 128) - 0.391f * (u - 128)).toInt()
+            var b = (1.164f * (y - 16) + 2.018f * (u - 128)).toInt()
+            r = if (r < 0) 0 else if (r > 255) 255 else r
+            g = if (g < 0) 0 else if (g > 255) 255 else g
+            b = if (b < 0) 0 else if (b > 255) 255 else b
+            rgba[a++] = r.toByte()
+            rgba[a++] = g.toByte()
+            rgba[a++] = b.toByte()
+            rgba[a++] = 0xFF.toByte()
+            ++j
+            cj += dj
+        }
+        ++i
+        ci += di
+    }
+}
+
 fun yuv4208888ToBitmap(image: ImageProxy): Bitmap {
     val nv21 = yuv420888ToNv21(image)
     val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
