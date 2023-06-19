@@ -3,6 +3,8 @@ package com.tans.androidopenglpractice
 import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import android.util.Size
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
@@ -14,13 +16,20 @@ import com.tans.androidopenglpractice.render.CubeRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.SimpleTriangleRender
 import com.tans.androidopenglpractice.render.SquareRender
+import com.tans.androidopenglpractice.render.yuv420888ToNv21
 import com.tbruyelle.rxpermissions3.RxPermissions
+import com.tenginekit.engine.core.ImageConfig
+import com.tenginekit.engine.core.SdkConfig
+import com.tenginekit.engine.core.TengineKitSdk
+import com.tenginekit.engine.face.FaceConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.rx3.await
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispatchers.Main) {
@@ -37,6 +46,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                 .firstOrError()
                 .await()
             if (permissionGrant) {
+                withContext(Dispatchers.IO) {
+                    initTengine()
+                }
                 val analysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setImageQueueDepth(5)
@@ -44,7 +56,29 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                     .setTargetResolution(Size(640, 480))
                     .setBackgroundExecutor(Dispatchers.IO.asExecutor())
                     .build()
-                analysis.setAnalyzer(Executors.newSingleThreadExecutor()) { imageProxy ->
+                analysis.setAnalyzer(Dispatchers.IO.asExecutor()) { imageProxy ->
+                    val yuv = yuv420888ToNv21(imageProxy)
+                    val width = imageProxy.cropRect.width()
+                    val height = imageProxy.cropRect.height()
+                    val faceConfig = FaceConfig().apply {
+                        detect = true
+                        landmark2d = true
+                        attribute = true
+                        eyeIris = true
+                        maxFaceNum = 1
+                    }
+                    val imageConfig = ImageConfig().apply {
+                        this.data = yuv
+                        this.degree = imageProxy.imageInfo.rotationDegrees
+                        this.mirror = false
+                        this.height = height
+                        this.width = width
+                        this.format = ImageConfig.FaceImageFormat.YUV
+                    }
+                    val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
+                    if (face != null) {
+                        Log.d(TAG, "Face: ${face.x1}, ${face.y1}, ${face.x2}, ${face.y2}")
+                    }
                     val render = glView.shapeRender
                     if (render is CameraRender) {
                         render.cameraReady(imageProxy)
@@ -94,6 +128,32 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
     override fun onDestroy() {
         super.onDestroy()
         cancel()
+        releaseTengine()
+    }
+
+    private fun initTengine() {
+        val modelDir = this.filesDir
+        val modelNames = assets.list("model") ?: emptyArray()
+        for (name in modelNames) {
+            val modelFile = File(modelDir, name)
+            if (modelFile.isFile) {
+                continue
+            }
+            modelFile.createNewFile()
+            modelFile.outputStream().use { os ->
+                assets.open("model/$name").use {
+                    it.copyTo(os)
+                }
+            }
+        }
+        val config = SdkConfig()
+        TengineKitSdk.getInstance().initSdk(modelDir.toString(), config, this)
+        TengineKitSdk.getInstance().initFaceDetect()
+    }
+
+    private fun releaseTengine() {
+        TengineKitSdk.getInstance().releaseFaceDetect()
+        TengineKitSdk.getInstance().release()
     }
 
     companion object {
