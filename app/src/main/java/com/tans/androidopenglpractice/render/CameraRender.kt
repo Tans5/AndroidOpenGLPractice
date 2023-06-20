@@ -38,28 +38,31 @@ class CameraRender : IShapeRender {
         val cameraProgram = compileShaderProgram(cameraVertexRender, cameraFragmentRender)
         val faceProgram = compileShaderProgram(faceVertexRender, faceFragmentRender)
         if (cameraProgram != null && faceProgram != null) {
-            val VAO = glGenVertexArrays()
-            GLES31.glBindVertexArray(VAO)
-            val VBO = glGenBuffers()
-            GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, VBO)
-            val EBO = glGenBuffers()
+            val cameraVAO = glGenVertexArrays()
+            val cameraVBO = glGenBuffers()
+            val cameraEBO = glGenBuffers()
 
             // 纹理
-            val texture = glGenTexture()
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, texture)
+            val cameraTexture = glGenTexture()
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, cameraTexture)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_REPEAT)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_REPEAT)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
             GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
             GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D)
 
+            val faceVAO = glGenVertexArrays()
+            val faceVBO = glGenBuffers()
+
             initData = InitData(
-                VAO = VAO,
-                VBO = VBO,
-                EBO = EBO,
                 cameraProgram = cameraProgram,
-                texture = texture,
-                faceProgram = faceProgram
+                cameraVAO = cameraVAO,
+                cameraVBO = cameraVBO,
+                cameraEBO = cameraEBO,
+                cameraTexture = cameraTexture,
+                faceProgram = faceProgram,
+                faceVAO = faceVAO,
+                faceVBO = faceVBO
             )
         }
     }
@@ -100,15 +103,15 @@ class CameraRender : IShapeRender {
                 xMax, yMin, 0.0f,   textureBottomRight[0], textureBottomRight[1],   // 右下角
                 xMin, yMin, 0.0f,  textureBottomLeft[0], textureBottomLeft[1],   // 左下角
             )
-            GLES31.glBindVertexArray(initData.VAO)
-            GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
+            GLES31.glBindVertexArray(initData.cameraVAO)
+            GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.cameraVBO)
             GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, cameraVertices.size * 4, cameraVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 5 * 4, 0)
             GLES31.glEnableVertexAttribArray(0)
             GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
             GLES31.glEnableVertexAttribArray(1)
 
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.texture)
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.cameraTexture)
             val bitmap = when (imageData.imageType) {
                 ImageType.NV21 -> imageData.image.nv21ToBitmap(imageData.width, imageData.height)
                 ImageType.RGBA -> imageData.image.rgbaToBitmap(imageData.width, imageData.height)
@@ -167,7 +170,7 @@ class CameraRender : IShapeRender {
                 0, 1, 2, // 第一个三角形
                 2, 3, 0 // 第二个三角形
             )
-            GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
+            GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.cameraEBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
 
@@ -177,8 +180,8 @@ class CameraRender : IShapeRender {
                  * 绘制 face frame
                  */
                 GLES31.glUseProgram(initData.faceProgram)
-                GLES31.glBindVertexArray(initData.VAO)
-                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
+                GLES31.glBindVertexArray(initData.faceVAO)
+                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
                 val faceFrameVertices = faceData.faceFrame.map { it.toGlPoint(xMin, xMax, yMin, yMax) }
                     .map {
                         it + floatArrayOf(0f, 1.0f, 0.0f, 0.0f)
@@ -310,12 +313,14 @@ class CameraRender : IShapeRender {
         }
 
         private data class InitData(
-            val VAO: Int,
-            val VBO: Int,
-            val EBO: Int,
             val cameraProgram: Int,
-            val texture: Int,
-            val faceProgram: Int
+            val cameraVAO: Int,
+            val cameraVBO: Int,
+            val cameraEBO: Int,
+            val cameraTexture: Int,
+            val faceProgram: Int,
+            val faceVAO: Int,
+            val faceVBO: Int
         )
 
         private const val cameraVertexRender = """#version 310 es

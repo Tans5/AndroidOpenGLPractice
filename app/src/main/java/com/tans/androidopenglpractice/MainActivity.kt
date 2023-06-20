@@ -6,8 +6,6 @@ import android.graphics.ImageFormat
 import android.graphics.PixelFormat
 import android.os.Bundle
 import android.os.SystemClock
-import android.util.Log
-import android.util.Size
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
