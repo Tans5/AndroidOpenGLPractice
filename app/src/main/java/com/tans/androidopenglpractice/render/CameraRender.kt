@@ -20,7 +20,7 @@ class CameraRender : IShapeRender {
     override var height: Int = 0
     override val logTag: String = "CameraRender"
 
-    private val pendingRenderFrames: LinkedBlockingDeque<ImageProxy> by lazy {
+    private val pendingRenderFrames: LinkedBlockingDeque<ImageData> by lazy {
         LinkedBlockingDeque()
     }
 
@@ -60,15 +60,20 @@ class CameraRender : IShapeRender {
 
     override fun onDrawFrame(owner: MyOpenGLView, gl: GL10) {
         val initData = this.initData
-        val imageProxy = pendingRenderFrames.pollFirst()
-        if (initData != null && imageProxy != null) {
+        val imageData = pendingRenderFrames.pollFirst()
+        if (initData != null && imageData != null) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             GLES31.glUseProgram(initData.program)
-            val imageWidth = imageProxy.cropRect.width()
-            val imageHeight = imageProxy.cropRect.height()
+            val (imageWidth, imageHeight) = when (imageData.rotation % 360) {
+                in 0 until  90 -> imageData.width to imageData.height
+                in 90 until  180 ->imageData.height to imageData.width
+                in 180 until 270 -> imageData.width to imageData.height
+                in 270 until  360 -> imageData.height to imageData.width
+                else ->  imageData.width to imageData.height
+            }
             val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
             val textureTransform = android.graphics.Matrix()
-            textureTransform.setRotate(- imageProxy.imageInfo.rotationDegrees.toFloat(), 0.5f, 0.5f)
+            textureTransform.setRotate(- imageData.rotation.toFloat(), 0.5f, 0.5f)
             val textureTopLeft = floatArrayOf(0.0f, 0.0f)
             val textureBottomLeft = floatArrayOf(0.0f, 1.0f)
             val textureTopRight = floatArrayOf(1.0f, 0.0f)
@@ -77,23 +82,17 @@ class CameraRender : IShapeRender {
             textureTransform.mapPoints(textureBottomLeft)
             textureTransform.mapPoints(textureTopRight)
             textureTransform.mapPoints(textureBottomRight)
-            val positionRatio = when (imageProxy.imageInfo.rotationDegrees) {
-                in 0 .. 90 -> 1 / imageRatio
-                in 90 .. 180 -> imageRatio
-                in 270 .. 360 -> 1 / imageRatio
-                else -> imageRatio
-            }
-            val xMin = -1f * positionRatio
-            val xMax = 1f * positionRatio
-            val yMin = -1f
-            val yMax = 1f
+            val xMin = if (imageRatio < 1.0f) (-1f * imageRatio) else -1f
+            val xMax = if (imageRatio < 1.0f) (1f * imageRatio) else 1f
+            val yMin = if (imageRatio < 1.0f) (-1f * imageRatio) else -1f
+            val yMax = if (imageRatio < 1.0f) (1f * imageRatio) else 1f
             val vertices = floatArrayOf(
                 // 坐标           // 纹理坐标
                 // 坐标(position 0)   // 纹理坐标
+                xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
                 xMax, yMax, 0.0f,    textureTopRight[0], textureTopRight[1],   // 右上角
                 xMax, yMin, 0.0f,   textureBottomRight[0], textureBottomRight[1],   // 右下角
                 xMin, yMin, 0.0f,  textureBottomLeft[0], textureBottomLeft[1],   // 左下角
-                xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
                 // 多加一个废弃点.
                 0.0f
             )
@@ -106,44 +105,47 @@ class CameraRender : IShapeRender {
             GLES31.glEnableVertexAttribArray(1)
 
             GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.texture)
-            val bitmap = imageProxy.toBitmap()
+            val bitmap = when (imageData.imageType) {
+                ImageType.NV21 -> imageData.image.nv21ToBitmap(imageData.width, imageData.height)
+                ImageType.RGBA -> imageData.image.rgbaToBitmap(imageData.width, imageData.height)
+            }
             GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
             bitmap.recycle()
+            imageData.imageProxy.close()
 //            val rgbaBytes = ByteArray(imageWidth * imageHeight * 4)
 //            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, imageWidth, imageHeight, 0,
 //            GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbaBytes))
-            imageProxy.close()
 
             val renderRatio = width.toFloat() / height.toFloat()
             // View
             val viewMatrix = newGlFloatMatrix()
             Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
-            when (scaleType) {
-                ScaleType.CenterFit -> {
-                    if (renderRatio < positionRatio) {
-                        // width < height
-                        Matrix.scaleM(
-                            viewMatrix,
-                            0,
-                            renderRatio / positionRatio,
-                            renderRatio / positionRatio,
-                            1.0f
-                        )
-                    }
-                }
-                ScaleType.CenterCrop -> {
-                    if (renderRatio > positionRatio) {
-                        // width > height
-                        Matrix.scaleM(
-                            viewMatrix,
-                            0,
-                            renderRatio / positionRatio,
-                            renderRatio / positionRatio,
-                            1.0f
-                        )
-                    }
-                }
-            }
+//            when (scaleType) {
+//                ScaleType.CenterFit -> {
+//                    if (renderRatio < positionRatio) {
+//                        // width < height
+//                        Matrix.scaleM(
+//                            viewMatrix,
+//                            0,
+//                            renderRatio / positionRatio,
+//                            renderRatio / positionRatio,
+//                            1.0f
+//                        )
+//                    }
+//                }
+//                ScaleType.CenterCrop -> {
+//                    if (renderRatio > positionRatio) {
+//                        // width > height
+//                        Matrix.scaleM(
+//                            viewMatrix,
+//                            0,
+//                            renderRatio / positionRatio,
+//                            renderRatio / positionRatio,
+//                            1.0f
+//                        )
+//                    }
+//                }
+//            }
 
             // 镜像显示
             Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
@@ -159,7 +161,7 @@ class CameraRender : IShapeRender {
 
             val indices = intArrayOf(
                 0, 1, 2, // 第一个三角形
-                0, 2, 3 // 第二个三角形
+                2, 3, 0 // 第二个三角形
             )
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
@@ -173,14 +175,49 @@ class CameraRender : IShapeRender {
         this.owner = null
     }
 
-    fun cameraReady(imageProxy: ImageProxy) {
+    fun cameraReady(imageData: ImageData) {
         this.owner?.let {
-            pendingRenderFrames.put(imageProxy)
+            pendingRenderFrames.put(imageData)
             it.requestRender()
-        } ?: imageProxy.close()
+        }
     }
 
     companion object {
+
+        enum class ImageType {
+            NV21, RGBA
+        }
+
+        data class ImageData(
+            val image: ByteArray,
+            val width: Int,
+            val height: Int,
+            val rotation: Int,
+            val imageType: ImageType,
+            val imageProxy: ImageProxy
+        ) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
+
+                other as ImageData
+
+                if (!image.contentEquals(other.image)) return false
+                if (width != other.width) return false
+                if (height != other.height) return false
+                if (imageType != other.imageType) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = image.contentHashCode()
+                result = 31 * result + width
+                result = 31 * result + height
+                result = 31 * result + imageType.hashCode()
+                return result
+            }
+        }
 
         enum class ScaleType {
             CenterFit,

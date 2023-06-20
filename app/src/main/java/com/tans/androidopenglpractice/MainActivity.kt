@@ -2,8 +2,9 @@ package com.tans.androidopenglpractice
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.graphics.ImageFormat
+import android.graphics.PixelFormat
 import android.os.Bundle
-import android.os.SystemClock
 import android.util.Log
 import android.util.Size
 import android.widget.Button
@@ -16,6 +17,7 @@ import com.tans.androidopenglpractice.render.CubeRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.SimpleTriangleRender
 import com.tans.androidopenglpractice.render.SquareRender
+import com.tans.androidopenglpractice.render.toRgba
 import com.tans.androidopenglpractice.render.yuv420888ToNv21
 import com.tbruyelle.rxpermissions3.RxPermissions
 import com.tenginekit.engine.core.ImageConfig
@@ -30,7 +32,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.rx3.await
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispatchers.Main) {
 
@@ -57,34 +58,69 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                     .setBackgroundExecutor(Dispatchers.IO.asExecutor())
                     .build()
                 analysis.setAnalyzer(Dispatchers.IO.asExecutor()) { imageProxy ->
-                    val yuv = yuv420888ToNv21(imageProxy)
-                    val width = imageProxy.cropRect.width()
-                    val height = imageProxy.cropRect.height()
-                    val faceConfig = FaceConfig().apply {
-                        detect = true
-                        landmark2d = true
-                        attribute = true
-                        eyeIris = true
-                        maxFaceNum = 1
-                    }
-                    val imageConfig = ImageConfig().apply {
-                        this.data = yuv
-                        this.degree = imageProxy.imageInfo.rotationDegrees
-                        this.mirror = false
-                        this.height = height
-                        this.width = width
-                        this.format = ImageConfig.FaceImageFormat.YUV
-                    }
-                    val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
-                    if (face != null) {
-                        Log.d(TAG, "Face: ${face.x1}, ${face.y1}, ${face.x2}, ${face.y2}")
-                    }
                     val render = glView.shapeRender
-                    if (render is CameraRender) {
-                        render.cameraReady(imageProxy)
-                    } else {
+                    if (render !is CameraRender) {
                         imageProxy.close()
+                        return@setAnalyzer
                     }
+                    val imageData = when (imageProxy.format) {
+                        ImageFormat.YUV_420_888 -> {
+                            val yuv = yuv420888ToNv21(imageProxy)
+                            val width = imageProxy.cropRect.width()
+                            val height = imageProxy.cropRect.height()
+                            CameraRender.Companion.ImageData(
+                                image = yuv,
+                                width = width,
+                                height = height,
+                                rotation = imageProxy.imageInfo.rotationDegrees,
+                                imageType = CameraRender.Companion.ImageType.NV21,
+                                imageProxy = imageProxy
+                            )
+                        }
+                        PixelFormat.RGBA_8888 -> {
+                            val width = imageProxy.width
+                            val height = imageProxy.height
+                            val rgba = ByteArray(width * height * 4)
+                            imageProxy.toRgba(rgba)
+                            CameraRender.Companion.ImageData(
+                                image = rgba,
+                                width = width,
+                                height = height,
+                                rotation = imageProxy.imageInfo.rotationDegrees,
+                                imageType = CameraRender.Companion.ImageType.RGBA,
+                                imageProxy = imageProxy
+                            )
+                        }
+                        else -> {
+                            imageProxy.close()
+                            return@setAnalyzer
+                        }
+                    }
+                    Dispatchers.IO.asExecutor().execute {
+                        val faceConfig = FaceConfig().apply {
+                            detect = true
+                            landmark2d = true
+                            attribute = true
+                            eyeIris = true
+                            maxFaceNum = 1
+                        }
+                        val imageConfig = ImageConfig().apply {
+                            this.data = imageData.image
+                            this.degree = imageData.rotation
+                            this.mirror = false
+                            this.width = imageData.width
+                            this.height = imageData.height
+                            this.format = when (imageData.imageType) {
+                                CameraRender.Companion.ImageType.NV21 -> ImageConfig.FaceImageFormat.YUV
+                                CameraRender.Companion.ImageType.RGBA -> ImageConfig.FaceImageFormat.RGBA
+                            }
+                        }
+                        val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
+                        if (face != null) {
+                            Log.d(TAG, "Face: ${face.x1}, ${face.y1}, ${face.x2}, ${face.y2}")
+                        }
+                    }
+                    render.cameraReady(imageData)
                 }
                 val cameraProvider = with(Dispatchers.IO) {
                     ProcessCameraProvider.getInstance(this@MainActivity).get()
