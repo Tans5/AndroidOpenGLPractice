@@ -8,6 +8,7 @@ import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.abs
 
 class CameraRender : IShapeRender {
 
@@ -24,6 +25,10 @@ class CameraRender : IShapeRender {
         LinkedBlockingDeque()
     }
 
+    private val pendingRenderFaceData: LinkedBlockingDeque<FaceData> by lazy {
+        LinkedBlockingDeque()
+    }
+
     private var owner: MyOpenGLView? = null
 
     var scaleType: ScaleType = ScaleType.CenterCrop
@@ -31,8 +36,9 @@ class CameraRender : IShapeRender {
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
-        val program = compileShaderProgram(cameraVertexRender, cameraFragmentRender)
-        if (program != null) {
+        val cameraProgram = compileShaderProgram(cameraVertexRender, cameraFragmentRender)
+        val faceProgram = compileShaderProgram(faceVertexRender, faceFragmentRender)
+        if (cameraProgram != null && faceProgram != null) {
             val VAO = glGenVertexArrays()
             GLES31.glBindVertexArray(VAO)
             val VBO = glGenBuffers()
@@ -52,8 +58,9 @@ class CameraRender : IShapeRender {
                 VAO = VAO,
                 VBO = VBO,
                 EBO = EBO,
-                program = program,
-                texture = texture
+                cameraProgram = cameraProgram,
+                texture = texture,
+                faceProgram = faceProgram
             )
         }
     }
@@ -63,7 +70,7 @@ class CameraRender : IShapeRender {
         val imageData = pendingRenderFrames.pollFirst()
         if (initData != null && imageData != null) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
-            GLES31.glUseProgram(initData.program)
+            GLES31.glUseProgram(initData.cameraProgram)
             val (imageWidth, imageHeight) = when (imageData.rotation % 360) {
                 in 0 until  90 -> imageData.width to imageData.height
                 in 90 until  180 ->imageData.height to imageData.width
@@ -87,7 +94,7 @@ class CameraRender : IShapeRender {
             val xMax = if (imageRatioX < 1.0f) (1f * imageRatioX) else 1f
             val yMin = if (imageRatioY < 1.0f) (-1f * imageRatioY) else -1f
             val yMax = if (imageRatioY < 1.0f) (1f * imageRatioY) else 1f
-            val vertices = floatArrayOf(
+            val cameraVertices = floatArrayOf(
                 // 坐标(position 0)   // 纹理坐标
                 xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
                 xMax, yMax, 0.0f,    textureTopRight[0], textureTopRight[1],   // 右上角
@@ -96,7 +103,7 @@ class CameraRender : IShapeRender {
             )
             GLES31.glBindVertexArray(initData.VAO)
             GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
-            GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
+            GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, cameraVertices.size * 4, cameraVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 5 * 4, 0)
             GLES31.glEnableVertexAttribArray(0)
             GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
@@ -147,15 +154,15 @@ class CameraRender : IShapeRender {
 
             // 镜像显示
             Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
-            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "view"), 1, false, viewMatrix, 0)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "view"), 1, false, viewMatrix, 0)
 
             // model
             val modelMatrix = newGlFloatMatrix()
-            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "model"), 1, false, modelMatrix, 0)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "model"), 1, false, modelMatrix, 0)
 
             // transform
             val transformMatrix = newGlFloatMatrix()
-            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.program, "transform"), 1, false, transformMatrix, 0)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "transform"), 1, false, transformMatrix, 0)
 
             val indices = intArrayOf(
                 0, 1, 2, // 第一个三角形
@@ -164,6 +171,32 @@ class CameraRender : IShapeRender {
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.EBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
+
+            val faceData = findFaceData(imageData.imageProxy.imageInfo.timestamp)
+            if (faceData != null) {
+                /**
+                 * 绘制 face frame
+                 */
+                GLES31.glUseProgram(initData.faceProgram)
+                GLES31.glBindVertexArray(initData.VAO)
+                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
+                val faceFrameVertices = faceData.faceFrame.map { it.toGlPoint(xMin, xMax, yMin, yMax) }
+                    .map {
+                        it + floatArrayOf(0f, 1.0f, 0.0f, 0.0f)
+                    }
+                    .fold(floatArrayOf()) { old, new ->
+                        old + new
+                    }
+                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, faceFrameVertices.size * 4, faceFrameVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
+                GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 6 * 4, 0)
+                GLES31.glEnableVertexAttribArray(0)
+                GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 6 * 4, 3 * 4)
+                GLES31.glEnableVertexAttribArray(1)
+                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
+                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
+                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
+                GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
+            }
         }
     }
 
@@ -177,10 +210,65 @@ class CameraRender : IShapeRender {
         this.owner?.let {
             pendingRenderFrames.put(imageData)
             it.requestRender()
+        } ?: imageData.imageProxy.close()
+    }
+
+    fun faceDataReady(faceData: FaceData) {
+        this.owner?.let {
+            pendingRenderFaceData.put(faceData)
+        }
+    }
+
+    private fun Point.toGlPoint(xMin: Float, xMax: Float, yMin: Float, yMax: Float): FloatArray {
+        val scaleX = xMax - xMin
+        val scaleY = yMax - yMin
+        return floatArrayOf(x * scaleX - scaleX / 2f, y * scaleY - scaleY / 2f)
+    }
+
+    private fun findFaceData(timestamp: Long): FaceData? {
+        val face = pendingRenderFaceData.pollFirst()
+        return if (face != null) {
+            face
+//            if (abs((timestamp - face.timestamp)) < 200) {
+//                face
+//            } else {
+//                findFaceData(timestamp)
+//            }
+        } else {
+            null
         }
     }
 
     companion object {
+
+        data class Point(
+            val x: Float,
+            val y: Float
+        )
+
+        data class FaceData(
+            val timestamp: Long,
+            // 4 point
+            val faceFrame: Array<Point>,
+        ) {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (javaClass != other?.javaClass) return false
+
+                other as FaceData
+
+                if (timestamp != other.timestamp) return false
+                if (!faceFrame.contentEquals(other.faceFrame)) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = timestamp.hashCode()
+                result = 31 * result + faceFrame.contentHashCode()
+                return result
+            }
+        }
 
         enum class ImageType {
             NV21, RGBA
@@ -226,8 +314,9 @@ class CameraRender : IShapeRender {
             val VAO: Int,
             val VBO: Int,
             val EBO: Int,
-            val program: Int,
-            val texture: Int
+            val cameraProgram: Int,
+            val texture: Int,
+            val faceProgram: Int
         )
 
         private const val cameraVertexRender = """#version 310 es
@@ -251,6 +340,28 @@ class CameraRender : IShapeRender {
             void main() {
                 FragColor = texture(Texture, TexCoord);
                 // FragColor = vec4(1.0, 0.0, 0.0, 0.0);
+            }
+        """
+
+        private const val faceVertexRender = """#version 310 es
+            layout (location = 0) in vec3 aPos;
+            layout (location = 1) in vec3 aColor;
+            uniform mat4 transform;
+            uniform mat4 model;
+            uniform mat4 view;
+            out vec3 Color;
+            void main() {
+                gl_Position = view * model * transform * vec4(aPos, 1.0);
+                Color = aColor;
+            }
+        """
+
+        private const val faceFragmentRender = """#version 310 es
+            precision highp float; // Define float precision
+            in vec3 Color;
+            out vec4 FragColor;
+            void main() {
+                FragColor = vec4(Color, 1.0);
             }
         """
     }

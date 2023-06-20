@@ -118,6 +118,16 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                         val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
                         if (face != null) {
                             Log.d(TAG, "Face: ${face.x1}, ${face.y1}, ${face.x2}, ${face.y2}")
+                            val faceData = CameraRender.Companion.FaceData(
+                                timestamp = imageProxy.imageInfo.timestamp,
+                                faceFrame = arrayOf(
+                                    CameraRender.Companion.Point(face.x1, face.y1),
+                                    CameraRender.Companion.Point(face.x2, face.y1),
+                                    CameraRender.Companion.Point(face.x2, face.y2),
+                                    CameraRender.Companion.Point(face.x1, face.y2)
+                                )
+                            )
+                            render.faceDataReady(faceData)
                         }
                     }
                     render.cameraReady(imageData)
