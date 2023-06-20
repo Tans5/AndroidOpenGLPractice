@@ -119,6 +119,15 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                         }
                         val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
                         if (face != null) {
+                            val landmark = face.landmark
+                            val check = getCameraPoints(landmark, 0, 69)
+                            val leftEyebrow = getCameraPoints(landmark, 69, 16)
+                            val rightEyebrow = getCameraPoints(landmark, 85, 16)
+                            val leftEye = getCameraPoints(landmark, 101, 16)
+                            val rightEye = getCameraPoints(landmark, 117, 16)
+                            val nose = getCameraPoints(landmark, 133, 47)
+                            val upLip = getCameraPoints(landmark, 180, 16)
+                            val downLip = getCameraPoints(landmark, 196, 16)
                             val faceData = CameraRender.Companion.FaceData(
                                 timestamp = timestamp,
                                 faceFrame = arrayOf(
@@ -126,7 +135,15 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                                     CameraRender.Companion.Point(face.x2, face.y1),
                                     CameraRender.Companion.Point(face.x2, face.y2),
                                     CameraRender.Companion.Point(face.x1, face.y2)
-                                )
+                                ),
+                                check = check,
+                                leftEyebrow = leftEyebrow,
+                                rightEyebrow = rightEyebrow,
+                                leftEye = leftEye,
+                                rightEye = rightEye,
+                                nose = nose,
+                                upLip = upLip,
+                                downLip = downLip
                             )
                             render.faceDataReady(faceData)
                         }
@@ -201,6 +218,14 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
     private fun releaseTengine() {
         TengineKitSdk.getInstance().releaseFaceDetect()
         TengineKitSdk.getInstance().release()
+    }
+
+    private fun getCameraPoints(dataSource: FloatArray, offset: Int, pointSize: Int): Array<CameraRender.Companion.Point> {
+        return Array(pointSize) { i ->
+            val ix = (offset + i) * 2
+            val iy = ix + 1
+            CameraRender.Companion.Point(dataSource[ix], dataSource[iy])
+        }
     }
 
     companion object {

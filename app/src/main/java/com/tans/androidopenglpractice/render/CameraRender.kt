@@ -182,14 +182,6 @@ class CameraRender : IShapeRender {
                 GLES31.glUseProgram(initData.faceProgram)
                 GLES31.glBindVertexArray(initData.faceVAO)
                 GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
-                val faceFrameVertices = faceData.faceFrame.map { it.toGlPoint(xMin, xMax, yMin, yMax) }
-                    .map {
-                        it + floatArrayOf(0f, 1.0f, 0.0f, 0.0f)
-                    }
-                    .fold(floatArrayOf()) { old, new ->
-                        old + new
-                    }
-                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, faceFrameVertices.size * 4, faceFrameVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
                 GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 6 * 4, 0)
                 GLES31.glEnableVertexAttribArray(0)
                 GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 6 * 4, 3 * 4)
@@ -197,7 +189,20 @@ class CameraRender : IShapeRender {
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
+
+                // 绘制Frame
+                GLES31.glBindVertexArray(initData.faceVAO)
+                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
+                val faceFrameVertices = faceData.faceFrame.toGlFacePoints(xMin, xMax, yMin, yMax, 1.0f,  0.0f, 0.0f)
+                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, faceFrameVertices.size * 4, faceFrameVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
                 GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
+
+                // 绘制脸颊
+                GLES31.glBindVertexArray(initData.faceVAO)
+                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
+                val checkVertices = faceData.check.toGlFacePoints(xMin, xMax, yMin, yMax, 0.0f,  1.0f, 0.0f)
+                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, checkVertices.size * 4, checkVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
+                GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, checkVertices.size / 6)
             }
         } else {
             imageData?.imageProxy?.close()
@@ -240,6 +245,23 @@ class CameraRender : IShapeRender {
         return pendingRenderFaceData.pollFirst()
     }
 
+    private fun Array<Point>.toGlFacePoints(
+        xMin: Float,
+        xMax: Float,
+        yMin: Float,
+        yMax: Float,
+        colorR: Float,
+        colorG: Float,
+        colorB: Float): FloatArray {
+        return map { it.toGlPoint(xMin, xMax, yMin, yMax) }
+            .map {
+                it + floatArrayOf(0f, colorR, colorG, colorB)
+            }
+            .fold(floatArrayOf()) { old, new ->
+                old + new
+            }
+    }
+
     companion object {
 
         data class Point(
@@ -251,6 +273,22 @@ class CameraRender : IShapeRender {
             val timestamp: Long,
             // 4 point
             val faceFrame: Array<Point>,
+            // 69 个点
+            val check: Array<Point>,
+            // 16 个点
+            val leftEyebrow: Array<Point>,
+            // 16 个点
+            val rightEyebrow: Array<Point>,
+            // 16 个点
+            val leftEye: Array<Point>,
+            // 16 个点
+            val rightEye: Array<Point>,
+            // 47 个点
+            val nose: Array<Point>,
+            // 16 个点
+            val upLip: Array<Point>,
+            // 16 个点
+            val downLip: Array<Point>
         ) {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
