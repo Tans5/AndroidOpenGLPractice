@@ -71,7 +71,8 @@ class CameraRender : IShapeRender {
                 in 270 until  360 -> imageData.height to imageData.width
                 else ->  imageData.width to imageData.height
             }
-            val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
+            val imageRatioX = imageWidth.toFloat() / imageHeight.toFloat()
+            val imageRatioY = 1f / imageRatioX
             val textureTransform = android.graphics.Matrix()
             textureTransform.setRotate(- imageData.rotation.toFloat(), 0.5f, 0.5f)
             val textureTopLeft = floatArrayOf(0.0f, 0.0f)
@@ -82,19 +83,16 @@ class CameraRender : IShapeRender {
             textureTransform.mapPoints(textureBottomLeft)
             textureTransform.mapPoints(textureTopRight)
             textureTransform.mapPoints(textureBottomRight)
-            val xMin = if (imageRatio < 1.0f) (-1f * imageRatio) else -1f
-            val xMax = if (imageRatio < 1.0f) (1f * imageRatio) else 1f
-            val yMin = if (imageRatio < 1.0f) (-1f * imageRatio) else -1f
-            val yMax = if (imageRatio < 1.0f) (1f * imageRatio) else 1f
+            val xMin = if (imageRatioX < 1.0f) (-1f * imageRatioX) else -1f
+            val xMax = if (imageRatioX < 1.0f) (1f * imageRatioX) else 1f
+            val yMin = if (imageRatioY < 1.0f) (-1f * imageRatioY) else -1f
+            val yMax = if (imageRatioY < 1.0f) (1f * imageRatioY) else 1f
             val vertices = floatArrayOf(
-                // 坐标           // 纹理坐标
                 // 坐标(position 0)   // 纹理坐标
                 xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
                 xMax, yMax, 0.0f,    textureTopRight[0], textureTopRight[1],   // 右上角
                 xMax, yMin, 0.0f,   textureBottomRight[0], textureBottomRight[1],   // 右下角
                 xMin, yMin, 0.0f,  textureBottomLeft[0], textureBottomLeft[1],   // 左下角
-                // 多加一个废弃点.
-                0.0f
             )
             GLES31.glBindVertexArray(initData.VAO)
             GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.VBO)
@@ -120,32 +118,32 @@ class CameraRender : IShapeRender {
             // View
             val viewMatrix = newGlFloatMatrix()
             Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
-//            when (scaleType) {
-//                ScaleType.CenterFit -> {
-//                    if (renderRatio < positionRatio) {
-//                        // width < height
-//                        Matrix.scaleM(
-//                            viewMatrix,
-//                            0,
-//                            renderRatio / positionRatio,
-//                            renderRatio / positionRatio,
-//                            1.0f
-//                        )
-//                    }
-//                }
-//                ScaleType.CenterCrop -> {
-//                    if (renderRatio > positionRatio) {
-//                        // width > height
-//                        Matrix.scaleM(
-//                            viewMatrix,
-//                            0,
-//                            renderRatio / positionRatio,
-//                            renderRatio / positionRatio,
-//                            1.0f
-//                        )
-//                    }
-//                }
-//            }
+            when (scaleType) {
+                ScaleType.CenterFit -> {
+                    if (renderRatio < imageRatioX) {
+                        // width < height
+                        Matrix.scaleM(
+                            viewMatrix,
+                            0,
+                            renderRatio / imageRatioX,
+                            renderRatio / imageRatioX,
+                            1.0f
+                        )
+                    }
+                }
+                ScaleType.CenterCrop -> {
+                    if (renderRatio > imageRatioX) {
+                        // width > height
+                        Matrix.scaleM(
+                            viewMatrix,
+                            0,
+                            renderRatio / imageRatioX,
+                            renderRatio / imageRatioX,
+                            1.0f
+                        )
+                    }
+                }
+            }
 
             // 镜像显示
             Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)

@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setImageQueueDepth(5)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                    .setTargetResolution(Size(640, 480))
+                    .setDefaultResolution(Size(640, 480))
                     .setBackgroundExecutor(Dispatchers.IO.asExecutor())
                     .build()
                 analysis.setAnalyzer(Dispatchers.IO.asExecutor()) { imageProxy ->
