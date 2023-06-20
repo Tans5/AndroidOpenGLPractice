@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.graphics.ImageFormat
 import android.graphics.PixelFormat
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.util.Size
 import android.widget.Button
@@ -52,9 +53,9 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                 }
                 val analysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .setImageQueueDepth(5)
+                    .setImageQueueDepth(1)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-                    .setDefaultResolution(Size(640, 480))
+                    // .setDefaultResolution(Size(640, 480))
                     .setBackgroundExecutor(Dispatchers.IO.asExecutor())
                     .build()
                 analysis.setAnalyzer(Dispatchers.IO.asExecutor()) { imageProxy ->
@@ -63,6 +64,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                         imageProxy.close()
                         return@setAnalyzer
                     }
+                    val timestamp = SystemClock.uptimeMillis()
                     val imageData = when (imageProxy.format) {
                         ImageFormat.YUV_420_888 -> {
                             val yuv = yuv420888ToNv21(imageProxy)
@@ -74,7 +76,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                                 height = height,
                                 rotation = imageProxy.imageInfo.rotationDegrees,
                                 imageType = CameraRender.Companion.ImageType.NV21,
-                                imageProxy = imageProxy
+                                imageProxy = imageProxy,
+                                timestamp = timestamp
                             )
                         }
                         PixelFormat.RGBA_8888 -> {
@@ -88,7 +91,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                                 height = height,
                                 rotation = imageProxy.imageInfo.rotationDegrees,
                                 imageType = CameraRender.Companion.ImageType.RGBA,
-                                imageProxy = imageProxy
+                                imageProxy = imageProxy,
+                                timestamp = timestamp
                             )
                         }
                         else -> {
@@ -96,7 +100,7 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                             return@setAnalyzer
                         }
                     }
-                    Dispatchers.IO.asExecutor().execute {
+                    glView.queueEvent {
                         val faceConfig = FaceConfig().apply {
                             detect = true
                             landmark2d = true
@@ -117,9 +121,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dispa
                         }
                         val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
                         if (face != null) {
-                            Log.d(TAG, "Face: ${face.x1}, ${face.y1}, ${face.x2}, ${face.y2}")
                             val faceData = CameraRender.Companion.FaceData(
-                                timestamp = imageProxy.imageInfo.timestamp,
+                                timestamp = timestamp,
                                 faceFrame = arrayOf(
                                     CameraRender.Companion.Point(face.x1, face.y1),
                                     CameraRender.Companion.Point(face.x2, face.y1),

@@ -8,7 +8,6 @@ import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.abs
 
 class CameraRender : IShapeRender {
 
@@ -153,7 +152,7 @@ class CameraRender : IShapeRender {
             }
 
             // 镜像显示
-            Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
+            // Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "view"), 1, false, viewMatrix, 0)
 
             // model
@@ -172,7 +171,7 @@ class CameraRender : IShapeRender {
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
 
-            val faceData = findFaceData(imageData.imageProxy.imageInfo.timestamp)
+            val faceData = findFaceData()
             if (faceData != null) {
                 /**
                  * 绘制 face frame
@@ -197,11 +196,18 @@ class CameraRender : IShapeRender {
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
                 GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
             }
+        } else {
+            imageData?.imageProxy?.close()
         }
     }
 
     override fun onViewDestroyed(owner: MyOpenGLView) {
         super.onViewDestroyed(owner)
+        for (f in pendingRenderFrames) {
+            f.imageProxy.close()
+        }
+        pendingRenderFrames.clear()
+        pendingRenderFaceData.clear()
         initData = null
         this.owner = null
     }
@@ -222,21 +228,13 @@ class CameraRender : IShapeRender {
     private fun Point.toGlPoint(xMin: Float, xMax: Float, yMin: Float, yMax: Float): FloatArray {
         val scaleX = xMax - xMin
         val scaleY = yMax - yMin
-        return floatArrayOf(x * scaleX - scaleX / 2f, y * scaleY - scaleY / 2f)
+        val dX = xMax - xMin
+        val dY = yMax - yMin
+        return floatArrayOf(x * scaleX - dX / 2f, y * - scaleY + dY / 2f)
     }
 
-    private fun findFaceData(timestamp: Long): FaceData? {
-        val face = pendingRenderFaceData.pollFirst()
-        return if (face != null) {
-            face
-//            if (abs((timestamp - face.timestamp)) < 200) {
-//                face
-//            } else {
-//                findFaceData(timestamp)
-//            }
-        } else {
-            null
-        }
+    private fun findFaceData(): FaceData? {
+        return pendingRenderFaceData.pollFirst()
     }
 
     companion object {
@@ -280,7 +278,8 @@ class CameraRender : IShapeRender {
             val height: Int,
             val rotation: Int,
             val imageType: ImageType,
-            val imageProxy: ImageProxy
+            val imageProxy: ImageProxy,
+            val timestamp: Long
         ) {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
