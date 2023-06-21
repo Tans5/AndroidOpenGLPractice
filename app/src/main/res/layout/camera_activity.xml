@@ -34,31 +34,27 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <Button
-            android:id="@+id/simple_triangle_bt"
+            android:id="@+id/cam_crop_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:text="Simple triangle" />
+            android:text="Cam Crop"/>
 
         <Button
-            android:id="@+id/square_bt"
+            android:id="@+id/cam_fit_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:text="Square" />
+            android:text="Cam Fit"/>
 
         <Button
-            android:id="@+id/cube_bt"
+            android:id="@+id/cam_mirror_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:text="Cube" />
+            android:text="Cam Mirror"/>
 
         <Button
-            android:id="@+id/camera_bt"
+            android:id="@+id/face_frame_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:text="Camera"/>
+            android:text="Face Frame" />
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -32,6 +32,10 @@ class CameraRender : IShapeRender {
 
     var scaleType: ScaleType = ScaleType.CenterCrop
 
+    var mirror: Boolean = true
+
+    var renderFaceFrame: Boolean = true
+
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
@@ -154,8 +158,10 @@ class CameraRender : IShapeRender {
                 }
             }
 
-            // 镜像显示
-            Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
+            if (mirror) {
+                // 镜像显示
+                Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
+            }
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "view"), 1, false, viewMatrix, 0)
 
             // model
@@ -175,7 +181,7 @@ class CameraRender : IShapeRender {
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
 
             val faceData = findFaceData()
-            if (faceData != null) {
+            if (faceData != null && renderFaceFrame) {
                 /**
                  * 绘制 face frame
                  */
