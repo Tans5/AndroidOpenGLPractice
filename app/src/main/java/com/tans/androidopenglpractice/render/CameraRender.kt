@@ -93,7 +93,7 @@ class CameraRender : IShapeRender {
                     Point(0.0f, 0.0f) to Point(1.0f, 1.0f)
                 }
                 ScaleType.CenterCrop -> {
-                    centerCropRect(
+                    centerCropTextureRect(
                         targetRatio = imageRatio,
                         topLeftPoint = Point(0.0f, 0.0f),
                         bottomRightPoint = Point(1.0f, 1.0f)
@@ -103,7 +103,7 @@ class CameraRender : IShapeRender {
 
             val (positionTl, positionRb) = when (scaleType) {
                 ScaleType.CenterFit -> {
-                    centerCropRect(
+                    centerCropPositionRect(
                         targetRatio = imageRatio,
                         topLeftPoint = Point(-1.0f, 1.0f),
                         bottomRightPoint = Point(1.0f, -1.0f)
@@ -442,22 +442,51 @@ class CameraRender : IShapeRender {
     }
 
 
-    private fun centerCropRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
+    private fun centerCropTextureRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
         val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
-        val oldRectHeight = bottomRightPoint.y - topLeftPoint.x
+        val oldRectHeight = bottomRightPoint.y - topLeftPoint.y
         val oldRectRatio = oldRectWidth / oldRectHeight
         return when  {
             oldRectRatio - targetRatio > 0.00001 -> {
                 // 裁剪 x
-                val newTopLeftX = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
-                val newBottomRightX = oldRectWidth - newTopLeftX
+                val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
+                val newTopLeftX = topLeftPoint.x + d
+                val newBottomRightX = bottomRightPoint.x - d
                 Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
             }
 
             targetRatio - oldRectRatio > 0.00001 -> {
                 // 裁剪 y
-                val newTopLeftY = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
-                val newBottomRightY = oldRectHeight - newTopLeftY
+                val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
+                val newTopLeftY = topLeftPoint.y + d
+                val newBottomRightY = bottomRightPoint.y - d
+                Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
+            }
+
+            else -> {
+                topLeftPoint to bottomRightPoint
+            }
+        }
+    }
+
+    private fun centerCropPositionRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
+        val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
+        val oldRectHeight = topLeftPoint.y - bottomRightPoint.y
+        val oldRectRatio = oldRectWidth / oldRectHeight
+        return when  {
+            oldRectRatio - targetRatio > 0.00001 -> {
+                // 裁剪 x
+                val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
+                val newTopLeftX = topLeftPoint.x + d
+                val newBottomRightX = bottomRightPoint.x - d
+                Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
+            }
+
+            targetRatio - oldRectRatio > 0.00001 -> {
+                // 裁剪 y
+                val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
+                val newTopLeftY = topLeftPoint.y - d
+                val newBottomRightY = bottomRightPoint.y + d
                 Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
             }
 
