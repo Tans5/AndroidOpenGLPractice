@@ -269,6 +269,32 @@ class CameraRender : IShapeRender {
                     colorB = 0.0f
                 )
 
+                // 左眼球
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.leftEyeIris,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 1.0f,
+                    colorG = 0.0f,
+                    colorB = 0.0f
+                )
+
+                // 右眼球
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.rightEyeIris,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 1.0f,
+                    colorG = 0.0f,
+                    colorB = 0.0f
+                )
+
                 // 鼻子
                 drawFacePoints(
                     initData = initData,
@@ -405,6 +431,10 @@ class CameraRender : IShapeRender {
             val leftEye: Array<Point>,
             // 16 个点
             val rightEye: Array<Point>,
+            // 5 个点
+            val leftEyeIris: Array<Point>,
+            // 5 个点
+            val rightEyeIris: Array<Point>,
             // 47 个点
             val nose: Array<Point>,
             // 16 个点
@@ -516,7 +546,7 @@ class CameraRender : IShapeRender {
             out vec3 Color;
             void main() {
                 gl_Position = view * model * transform * vec4(aPos, 1.0);
-                gl_PointSize = 3.0;
+                gl_PointSize = 4.0;
                 Color = aColor;
             }
         """

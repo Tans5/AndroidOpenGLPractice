@@ -53,11 +53,6 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                     .setBackgroundExecutor(Dispatchers.IO.asExecutor())
                     .build()
                 analysis.setAnalyzer(Dispatchers.IO.asExecutor()) { imageProxy ->
-                    val render = glView.shapeRender
-                    if (render !is CameraRender) {
-                        imageProxy.close()
-                        return@setAnalyzer
-                    }
                     val timestamp = SystemClock.uptimeMillis()
                     val imageData = when (imageProxy.format) {
                         ImageFormat.YUV_420_888 -> {
@@ -124,6 +119,18 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                             val nose = getCameraPoints(landmark, 133, 47)
                             val upLip = getCameraPoints(landmark, 180, 16)
                             val downLip = getCameraPoints(landmark, 196, 16)
+                            val leftEyeIris = Array(5) {
+                                CameraRender.Companion.Point(
+                                    x =  face.eyeIrisLeft[it * 3],
+                                    y = face.eyeIrisLeft[it * 3 + 1]
+                                )
+                            }
+                            val rightEyeIris = Array(5) {
+                                CameraRender.Companion.Point(
+                                    x =  face.eyeIrisRight[it * 3],
+                                    y = face.eyeIrisRight[it * 3 + 1]
+                                )
+                            }
                             val faceData = CameraRender.Companion.FaceData(
                                 timestamp = timestamp,
                                 faceFrame = arrayOf(
@@ -137,6 +144,8 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                                 rightEyebrow = rightEyebrow,
                                 leftEye = leftEye,
                                 rightEye = rightEye,
+                                leftEyeIris = leftEyeIris,
+                                rightEyeIris = rightEyeIris,
                                 nose = nose,
                                 upLip = upLip,
                                 downLip = downLip
