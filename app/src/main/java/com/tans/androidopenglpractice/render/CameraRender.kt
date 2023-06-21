@@ -39,8 +39,8 @@ class CameraRender : IShapeRender {
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
-        val cameraProgram = compileShaderProgram(cameraVertexRender, cameraFragmentRender)
-        val faceProgram = compileShaderProgram(faceVertexRender, faceFragmentRender)
+        val cameraProgram = compileShaderFromAssets(owner.context, "camera.vert", "camera.frag")
+        val faceProgram = compileShaderFromAssets(owner.context, "face_frame.vert", "face_frame.frag")
         if (cameraProgram != null && faceProgram != null) {
             val cameraVAO = glGenVertexArrays()
             val cameraVBO = glGenBuffers()
@@ -512,52 +512,5 @@ class CameraRender : IShapeRender {
             val faceVAO: Int,
             val faceVBO: Int
         )
-
-        private const val cameraVertexRender = """#version 310 es
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec2 aTexCoord;
-            uniform mat4 transform;
-            uniform mat4 model;
-            uniform mat4 view;
-            out vec2 TexCoord;
-            void main() {
-                gl_Position = view * model * transform * vec4(aPos, 1.0);
-                TexCoord = aTexCoord;
-            }
-        """
-
-        private const val cameraFragmentRender = """#version 310 es
-            precision highp float; // Define float precision
-            uniform sampler2D Texture;
-            in vec2 TexCoord;
-            out vec4 FragColor;
-            void main() {
-                FragColor = texture(Texture, TexCoord);
-                // FragColor = vec4(1.0, 0.0, 0.0, 0.0);
-            }
-        """
-
-        private const val faceVertexRender = """#version 310 es
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec3 aColor;
-            uniform mat4 transform;
-            uniform mat4 model;
-            uniform mat4 view;
-            out vec3 Color;
-            void main() {
-                gl_Position = view * model * transform * vec4(aPos, 1.0);
-                gl_PointSize = 4.0;
-                Color = aColor;
-            }
-        """
-
-        private const val faceFragmentRender = """#version 310 es
-            precision highp float; // Define float precision
-            in vec3 Color;
-            out vec4 FragColor;
-            void main() {
-                FragColor = vec4(Color, 1.0);
-            }
-        """
     }
 }

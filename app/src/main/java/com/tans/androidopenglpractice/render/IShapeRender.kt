@@ -1,5 +1,6 @@
 package com.tans.androidopenglpractice.render
 
+import android.content.Context
 import android.opengl.GLES31
 import android.util.Log
 import java.nio.ByteBuffer
@@ -29,6 +30,30 @@ interface IShapeRender {
 
     fun onViewDestroyed(owner: MyOpenGLView) {
         isActive.set(false)
+    }
+
+    fun compileShaderFromAssets(
+        context: Context,
+        vertexShaderFile: String,
+        fragmentShaderFile: String
+    ): Int? {
+        val vertexRender = try {
+            context.assets.open(vertexShaderFile).use {
+                String(it.readBytes(), Charsets.UTF_8)
+            }
+        } catch (e: Throwable) {
+            Log.e(logTag, "Load vertex shader source file $vertexShaderFile fail: ${e.message}", e)
+            return null
+        }
+        val fragmentRender = try {
+            context.assets.open(fragmentShaderFile).use {
+                String(it.readBytes(), Charsets.UTF_8)
+            }
+        } catch (e: Throwable) {
+            Log.e(logTag, "Load fragment shader source file $vertexShaderFile fail: ${e.message}", e)
+            return null
+        }
+        return compileShaderProgram(vertexRender, fragmentRender)
     }
 
     fun compileShaderProgram(

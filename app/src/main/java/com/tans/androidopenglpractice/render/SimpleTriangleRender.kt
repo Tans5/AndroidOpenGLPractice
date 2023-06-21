@@ -17,7 +17,7 @@ class SimpleTriangleRender : IShapeRender {
 
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
-        val program = compileShaderProgram(triangleVertexShader, triangleFragmentShader)
+        val program = compileShaderFromAssets(owner.context, "simple_triangle.vert", "simple_triangle.frag")
         if (program != null) {
             val VBO = glGenBuffers()
             val VAO = glGenVertexArrays()
@@ -67,25 +67,6 @@ class SimpleTriangleRender : IShapeRender {
             val VBO: Int,
             val program: Int
         )
-
-        private const val triangleVertexShader = """#version 310 es
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec3 aColor;
-            out vec3 pColor;
-            void main() {
-                gl_Position = vec4(aPos, 1.0);
-                pColor = aColor;
-            }
-        """
-
-        private const val triangleFragmentShader = """#version 310 es 
-            precision highp float; // Define float precision
-            in vec3 pColor;
-            out vec4 FragColor;
-            void main() {
-                FragColor = vec4(pColor, 1.0);
-            }
-        """
 
     }
 }

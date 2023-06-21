@@ -21,7 +21,7 @@ class SquareRender : IShapeRender {
 
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
-        val program = compileShaderProgram(squareVertexRender, squareFragmentRender)
+        val program = compileShaderFromAssets(owner.context, "square.vert", "square.frag")
         if (program != null) {
             val vertices = floatArrayOf(
                 // 坐标(position 0)   // 纹理坐标
@@ -126,29 +126,5 @@ class SquareRender : IShapeRender {
             val program: Int,
             val texture: Int?
         )
-
-        private const val squareVertexRender = """#version 310 es
-            layout (location = 0) in vec3 aPos;
-            layout (location = 1) in vec2 aTexCoord;
-            uniform mat4 transform;
-            uniform mat4 model;
-            uniform mat4 view;
-            uniform mat4 projection;
-            out vec2 TexCoord;
-            void main() {
-                gl_Position = projection * view * model * transform * vec4(aPos, 1.0);
-                TexCoord = aTexCoord;
-            }
-        """
-
-        private const val squareFragmentRender = """#version 310 es
-            precision highp float; // Define float precision
-            uniform sampler2D Texture;
-            in vec2 TexCoord;
-            out vec4 FragColor;
-            void main() {
-                FragColor = texture(Texture, TexCoord);
-            }
-        """
     }
 }
