@@ -85,28 +85,59 @@ class CameraRender : IShapeRender {
                 in 270 until  360 -> imageData.height to imageData.width
                 else ->  imageData.width to imageData.height
             }
-            val imageRatioX = imageWidth.toFloat() / imageHeight.toFloat()
-            val imageRatioY = 1f / imageRatioX
+            val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
+            val scaleType = this.scaleType
+
+            val (textureTl, textureRb) = when (scaleType) {
+                ScaleType.CenterFit -> {
+                    Point(0.0f, 0.0f) to Point(1.0f, 1.0f)
+                }
+                ScaleType.CenterCrop -> {
+                    centerCropRect(
+                        targetRatio = imageRatio,
+                        topLeftPoint = Point(0.0f, 0.0f),
+                        bottomRightPoint = Point(1.0f, 1.0f)
+                    )
+                }
+            }
+
+            val (positionTl, positionRb) = when (scaleType) {
+                ScaleType.CenterFit -> {
+                    centerCropRect(
+                        targetRatio = imageRatio,
+                        topLeftPoint = Point(-1.0f, 1.0f),
+                        bottomRightPoint = Point(1.0f, -1.0f)
+                    )
+                }
+
+                ScaleType.CenterCrop -> {
+                    Point(-1.0f, 1.0f) to Point(1.0f, -1.0f)
+                }
+            }
+
+            val textureTopLeft = floatArrayOf(textureTl.x, textureTl.y)
+            val textureBottomLeft = floatArrayOf(textureTl.x, textureRb.y)
+            val textureTopRight = floatArrayOf(textureRb.x, textureTl.y)
+            val textureBottomRight = floatArrayOf(textureRb.x, textureRb.y)
+
             val textureTransform = android.graphics.Matrix()
-            textureTransform.setRotate(- imageData.rotation.toFloat(), 0.5f, 0.5f)
-            val textureTopLeft = floatArrayOf(0.0f, 0.0f)
-            val textureBottomLeft = floatArrayOf(0.0f, 1.0f)
-            val textureTopRight = floatArrayOf(1.0f, 0.0f)
-            val textureBottomRight = floatArrayOf(1.0f, 1.0f)
+            val rotateCenter = centerPoint(textureTl, textureRb)
+            textureTransform.setRotate(360f - imageData.rotation.toFloat(), rotateCenter.x, rotateCenter.y)
             textureTransform.mapPoints(textureTopLeft)
             textureTransform.mapPoints(textureBottomLeft)
             textureTransform.mapPoints(textureTopRight)
             textureTransform.mapPoints(textureBottomRight)
-            val xMin = if (imageRatioX < 1.0f) (-1f * imageRatioX) else -1f
-            val xMax = if (imageRatioX < 1.0f) (1f * imageRatioX) else 1f
-            val yMin = if (imageRatioY < 1.0f) (-1f * imageRatioY) else -1f
-            val yMax = if (imageRatioY < 1.0f) (1f * imageRatioY) else 1f
+            val xMin = positionTl.x
+            val xMax = positionRb.x
+            val yMin = positionTl.y
+            val yMax = positionRb.y
             val cameraVertices = floatArrayOf(
                 // 坐标(position 0)   // 纹理坐标
                 xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
                 xMax, yMax, 0.0f,    textureTopRight[0], textureTopRight[1],   // 右上角
                 xMax, yMin, 0.0f,   textureBottomRight[0], textureBottomRight[1],   // 右下角
                 xMin, yMin, 0.0f,  textureBottomLeft[0], textureBottomLeft[1],   // 左下角
+                0.0f
             )
             GLES31.glBindVertexArray(initData.cameraVAO)
             GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.cameraVBO)
@@ -132,32 +163,6 @@ class CameraRender : IShapeRender {
             // View
             val viewMatrix = newGlFloatMatrix()
             Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
-            when (scaleType) {
-                ScaleType.CenterFit -> {
-                    if (renderRatio < imageRatioX) {
-                        // width < height
-                        Matrix.scaleM(
-                            viewMatrix,
-                            0,
-                            renderRatio / imageRatioX,
-                            renderRatio / imageRatioX,
-                            1.0f
-                        )
-                    }
-                }
-                ScaleType.CenterCrop -> {
-                    if (renderRatio > imageRatioX) {
-                        // width > height
-                        Matrix.scaleM(
-                            viewMatrix,
-                            0,
-                            renderRatio / imageRatioX,
-                            renderRatio / imageRatioX,
-                            1.0f
-                        )
-                    }
-                }
-            }
 
             if (mirror) {
                 // 镜像显示
@@ -434,6 +439,36 @@ class CameraRender : IShapeRender {
         val array = floatArrayOf(x, y)
         transform.mapPoints(array)
         return Point(array[0], array[1])
+    }
+
+
+    private fun centerCropRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
+        val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
+        val oldRectHeight = bottomRightPoint.y - topLeftPoint.x
+        val oldRectRatio = oldRectWidth / oldRectHeight
+        return when  {
+            oldRectRatio - targetRatio > 0.00001 -> {
+                // 裁剪 x
+                val newTopLeftX = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
+                val newBottomRightX = oldRectWidth - newTopLeftX
+                Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
+            }
+
+            targetRatio - oldRectRatio > 0.00001 -> {
+                // 裁剪 y
+                val newTopLeftY = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
+                val newBottomRightY = oldRectHeight - newTopLeftY
+                Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
+            }
+
+            else -> {
+                topLeftPoint to bottomRightPoint
+            }
+        }
+    }
+
+    private fun centerPoint(topLeftPoint: Point, bottomRightPoint: Point): Point {
+        return Point(x = (topLeftPoint.x + bottomRightPoint.x) / 2.0f, y = (topLeftPoint.y + bottomRightPoint.y) / 2.0f)
     }
 
     companion object {
