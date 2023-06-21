@@ -8,6 +8,7 @@ import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.sqrt
 
 class CameraRender : IShapeRender {
 
@@ -172,6 +173,19 @@ class CameraRender : IShapeRender {
             val transformMatrix = newGlFloatMatrix()
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "transform"), 1, false, transformMatrix, 0)
 
+            val faceData = findFaceData()
+            val leftEyeIris = floatArrayOf(0.0f, 0.0f)
+            var leftEyeRadius = 0f
+            if (faceData != null) {
+                val p = faceData.leftEyeIris[0]
+                val fixed = p.rotate(- imageData.rotation.toFloat())
+                leftEyeIris[0] = fixed.x
+                leftEyeIris[1] = fixed.y
+                leftEyeRadius = p.distance(faceData.leftEyeIris[1])
+            }
+            GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeIris"), leftEyeIris[0], leftEyeIris[1])
+            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeIrisRadius"), leftEyeRadius)
+
             val indices = intArrayOf(
                 0, 1, 2, // 第一个三角形
                 2, 3, 0 // 第二个三角形
@@ -179,8 +193,6 @@ class CameraRender : IShapeRender {
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.cameraEBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
-
-            val faceData = findFaceData()
             if (faceData != null && renderFaceFrame) {
                 /**
                  * 绘制 face frame
@@ -408,6 +420,20 @@ class CameraRender : IShapeRender {
             .fold(floatArrayOf()) { old, new ->
                 old + new
             }
+    }
+
+    private fun Point.distance(targetPoint: Point): Float {
+        val dx = x - targetPoint.x
+        val dy = y - targetPoint.y
+        return sqrt(dx * dx + dy * dy)
+    }
+
+    private fun Point.rotate(degree: Float, cx: Float = 0.5f, cy: Float = 0.5f): Point {
+        val transform = android.graphics.Matrix()
+        transform.setRotate(degree, cx, cy)
+        val array = floatArrayOf(x, y)
+        transform.mapPoints(array)
+        return Point(array[0], array[1])
     }
 
     companion object {
