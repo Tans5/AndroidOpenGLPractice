@@ -155,7 +155,7 @@ class CameraRender : IShapeRender {
             }
 
             // 镜像显示
-            // Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
+            Matrix.rotateM(viewMatrix, 0, 180f, 0f, 1f, 0f)
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "view"), 1, false, viewMatrix, 0)
 
             // model
@@ -189,6 +189,7 @@ class CameraRender : IShapeRender {
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
+                GLES31.glLineWidth(3f)
 
                 // 绘制Frame
                 GLES31.glBindVertexArray(initData.faceVAO)
@@ -198,11 +199,108 @@ class CameraRender : IShapeRender {
                 GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
 
                 // 绘制脸颊
-                GLES31.glBindVertexArray(initData.faceVAO)
-                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
-                val checkVertices = faceData.check.toGlFacePoints(xMin, xMax, yMin, yMax, 0.0f,  1.0f, 0.0f)
-                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, checkVertices.size * 4, checkVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
-                GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, checkVertices.size / 6)
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.check,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 左眉毛
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.leftEyebrow,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 右眉毛
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.rightEyebrow,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 左眼
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.leftEye,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 右眼
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.rightEye,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 鼻子
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.nose,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 上嘴唇
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.upLip,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
+
+                // 下嘴唇
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.downLip,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 1.0f,
+                    colorB = 0.0f
+                )
             }
         } else {
             imageData?.imageProxy?.close()
@@ -231,6 +329,24 @@ class CameraRender : IShapeRender {
         this.owner?.let {
             pendingRenderFaceData.put(faceData)
         }
+    }
+
+
+    private fun drawFacePoints(
+        initData: InitData,
+        points: Array<Point>,
+        xMin: Float,
+        xMax: Float,
+        yMin: Float,
+        yMax: Float,
+        colorR: Float,
+        colorG: Float,
+        colorB: Float) {
+        GLES31.glBindVertexArray(initData.faceVAO)
+        GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
+        val vertices = points.toGlFacePoints(xMin, xMax, yMin, yMax, colorR,  colorG, colorB)
+        GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
+        GLES31.glDrawArrays(GLES31.GL_POINTS, 0, vertices.size / 6)
     }
 
     private fun Point.toGlPoint(xMin: Float, xMax: Float, yMin: Float, yMax: Float): FloatArray {
@@ -394,6 +510,7 @@ class CameraRender : IShapeRender {
             out vec3 Color;
             void main() {
                 gl_Position = view * model * transform * vec4(aPos, 1.0);
+                gl_PointSize = 3.0;
                 Color = aColor;
             }
         """
