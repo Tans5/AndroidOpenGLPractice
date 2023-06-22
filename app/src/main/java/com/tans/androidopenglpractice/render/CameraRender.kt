@@ -96,7 +96,7 @@ class CameraRender : IShapeRender {
                 }
                 ScaleType.CenterCrop -> {
                     centerCropTextureRect(
-                        targetRatio = imageRatio,
+                        targetRatio = renderRatio / imageRatio,
                         topLeftPoint = Point(0.0f, 0.0f),
                         bottomRightPoint = Point(1.0f, 1.0f)
                     )
