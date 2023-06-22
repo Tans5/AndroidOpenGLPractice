@@ -86,6 +86,7 @@ class CameraRender : IShapeRender {
                 else ->  imageData.width to imageData.height
             }
             val imageRatio = imageWidth.toFloat() / imageHeight.toFloat()
+            val renderRatio = width.toFloat() / height.toFloat()
             val scaleType = this.scaleType
 
             val (textureTl, textureRb) = when (scaleType) {
@@ -105,13 +106,13 @@ class CameraRender : IShapeRender {
                 ScaleType.CenterFit -> {
                     centerCropPositionRect(
                         targetRatio = imageRatio,
-                        topLeftPoint = Point(-1.0f, 1.0f),
-                        bottomRightPoint = Point(1.0f, -1.0f)
+                        topLeftPoint = Point(-1.0f * renderRatio, 1.0f),
+                        bottomRightPoint = Point(1.0f * renderRatio, -1.0f)
                     )
                 }
 
                 ScaleType.CenterCrop -> {
-                    Point(-1.0f, 1.0f) to Point(1.0f, -1.0f)
+                    Point(-1.0f * renderRatio, 1.0f) to Point(1.0f * renderRatio, -1.0f)
                 }
             }
 
@@ -129,8 +130,8 @@ class CameraRender : IShapeRender {
             textureTransform.mapPoints(textureBottomRight)
             val xMin = positionTl.x
             val xMax = positionRb.x
-            val yMin = positionTl.y
-            val yMax = positionRb.y
+            val yMin = positionRb.y
+            val yMax = positionTl.y
             val cameraVertices = floatArrayOf(
                 // 坐标(position 0)   // 纹理坐标
                 xMin, yMax, 0.0f,   textureTopLeft[0], textureTopLeft[1],    // 左上角
@@ -159,7 +160,6 @@ class CameraRender : IShapeRender {
 //            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, imageWidth, imageHeight, 0,
 //            GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, ByteBuffer.wrap(rgbaBytes))
 
-            val renderRatio = width.toFloat() / height.toFloat()
             // View
             val viewMatrix = newGlFloatMatrix()
             Matrix.scaleM(viewMatrix, 0, 1 / renderRatio, 1.0f, 1.0f)
