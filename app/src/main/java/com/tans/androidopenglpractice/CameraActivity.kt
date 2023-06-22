@@ -160,6 +160,18 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 }
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this@CameraActivity, CameraSelector.DEFAULT_FRONT_CAMERA, analysis)
+                var cameraSelectedCamera = CameraSelector.DEFAULT_FRONT_CAMERA
+
+                findViewById<Button>(R.id.change_camera_bt).setOnClickListener {
+                    cameraProvider.unbindAll()
+                    if (cameraSelectedCamera == CameraSelector.DEFAULT_FRONT_CAMERA) {
+                        cameraSelectedCamera = CameraSelector.DEFAULT_BACK_CAMERA
+                        cameraProvider.bindToLifecycle(this@CameraActivity, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
+                    } else {
+                        cameraSelectedCamera = CameraSelector.DEFAULT_FRONT_CAMERA
+                        cameraProvider.bindToLifecycle(this@CameraActivity, CameraSelector.DEFAULT_FRONT_CAMERA, analysis)
+                    }
+                }
 
                 findViewById<Button>(R.id.cam_crop_bt).setOnClickListener {
                     render.scaleType = CameraRender.Companion.ScaleType.CenterCrop

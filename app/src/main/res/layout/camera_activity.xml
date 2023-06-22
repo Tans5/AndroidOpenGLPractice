@@ -56,5 +56,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Face Frame" />
+
+        <Button
+            android:id="@+id/change_camera_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cam Change"/>
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

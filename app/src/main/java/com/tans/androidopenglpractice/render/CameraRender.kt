@@ -78,7 +78,8 @@ class CameraRender : IShapeRender {
         if (initData != null && imageData != null) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
             GLES31.glUseProgram(initData.cameraProgram)
-            val (imageWidth, imageHeight) = when (imageData.rotation % 360) {
+            val rotation = imageData.rotation % 360
+            val (imageWidth, imageHeight) = when (rotation) {
                 in 0 until  90 -> imageData.width to imageData.height
                 in 90 until  180 ->imageData.height to imageData.width
                 in 180 until 270 -> imageData.width to imageData.height
@@ -123,7 +124,7 @@ class CameraRender : IShapeRender {
 
             val textureTransform = android.graphics.Matrix()
             val rotateCenter = centerPoint(textureTl, textureRb)
-            textureTransform.setRotate(360f - imageData.rotation.toFloat(), rotateCenter.x, rotateCenter.y)
+            textureTransform.setRotate(360f - rotation.toFloat(), rotateCenter.x, rotateCenter.y)
             textureTransform.mapPoints(textureTopLeft)
             textureTransform.mapPoints(textureBottomLeft)
             textureTransform.mapPoints(textureTopRight)
@@ -183,7 +184,7 @@ class CameraRender : IShapeRender {
             var leftEyeRadius = 0f
             if (faceData != null) {
                 val p = faceData.leftEyeIris[0]
-                val fixed = p.rotate(- imageData.rotation.toFloat())
+                val fixed = p.rotate(360.0f - rotation)
                 leftEyeIris[0] = fixed.x
                 leftEyeIris[1] = fixed.y
                 leftEyeRadius = p.distance(faceData.leftEyeIris[1])
