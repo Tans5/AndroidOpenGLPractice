@@ -210,6 +210,8 @@ class CameraRender : IShapeRender {
                 GLES31.glEnableVertexAttribArray(0)
                 GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 6 * 4, 3 * 4)
                 GLES31.glEnableVertexAttribArray(1)
+                val textureRatio = (textureRb.x - textureTl.x) / (textureRb.y - textureTl.y)
+                Matrix.scaleM(viewMatrix, 0, 1 / textureRatio, 1.0f, 1.0f)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
                 GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
