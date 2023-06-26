@@ -13,6 +13,27 @@ vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float inte
     return currentCoordinate;
 }
 
+
+
+/**
+  * 椭圆的方程: (x - h)^2 / a^2 + (y - h)^2 / b^2 = 1
+  * x = h + a * cost
+  * y = k + b * sint
+ */
+vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
+    float dx = currentCoordinate.x - center.x;
+    float dy = currentCoordinate.y - center.y;
+    float checkDistence = dx * dx / a * a + dy * dy / b * b;
+    if (checkDistence > 1.0) {
+        return currentCoordinate;
+    }
+    float distanceToCenter = distance(currentCoordinate, center);
+    float ovalX = center.x + a * dx / distanceToCenter;
+    float ovalY = center.y + b * dy / distanceToCenter;
+    float radius = distance(vec2(ovalX, ovalY), center);
+    return enlarge(currentCoordinate, center, radius, intensity);
+}
+
 // 圈内缩小，intensity取值范围是0～1
 vec2 shrink(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
 {
