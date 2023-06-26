@@ -289,7 +289,7 @@ class CameraRender : IShapeRender {
                     colorB = 0.0f
                 )
 
-                // 左眼球
+                // 左眼虹膜
                 drawFacePoints(
                     initData = initData,
                     points = faceData.leftEyeIris,
@@ -302,7 +302,19 @@ class CameraRender : IShapeRender {
                     colorB = 0.0f
                 )
 
-                // 右眼球
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.leftEyeIrisF,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 0.0f,
+                    colorB = 1.0f
+                )
+
+                // 右眼虹膜
                 drawFacePoints(
                     initData = initData,
                     points = faceData.rightEyeIris,
@@ -313,6 +325,18 @@ class CameraRender : IShapeRender {
                     colorR = 1.0f,
                     colorG = 0.0f,
                     colorB = 0.0f
+                )
+
+                drawFacePoints(
+                    initData = initData,
+                    points = faceData.rightEyeIrisF,
+                    xMin = xMin,
+                    xMax = xMax,
+                    yMin = yMin,
+                    yMax = yMax,
+                    colorR = 0.0f,
+                    colorG = 0.0f,
+                    colorB = 1.0f
                 )
 
                 // 鼻子
@@ -526,8 +550,12 @@ class CameraRender : IShapeRender {
             val rightEye: Array<Point>,
             // 5 个点
             val leftEyeIris: Array<Point>,
+            // 15 个点
+            val leftEyeIrisF: Array<Point>,
             // 5 个点
             val rightEyeIris: Array<Point>,
+            // 15 个点
+            val rightEyeIrisF: Array<Point>,
             // 47 个点
             val nose: Array<Point>,
             // 16 个点

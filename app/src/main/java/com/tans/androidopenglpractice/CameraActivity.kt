@@ -131,6 +131,18 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                                     y = face.eyeIrisRight[it * 3 + 1]
                                 )
                             }
+                            val leftEyeIrisFrame = Array(15) {
+                                CameraRender.Companion.Point(
+                                    x = face.eyeLandMarkLeft[it * 3],
+                                    y = face.eyeLandMarkLeft[it * 3 + 1]
+                                )
+                            }
+                            val rightEyeIrisFrame = Array(15) {
+                                CameraRender.Companion.Point(
+                                    x = face.eyeLandMarkRight[it * 3],
+                                    y = face.eyeLandMarkRight[it * 3 + 1]
+                                )
+                            }
                             val faceData = CameraRender.Companion.FaceData(
                                 timestamp = timestamp,
                                 faceFrame = arrayOf(
@@ -145,7 +157,9 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                                 leftEye = leftEye,
                                 rightEye = rightEye,
                                 leftEyeIris = leftEyeIris,
+                                leftEyeIrisF = leftEyeIrisFrame,
                                 rightEyeIris = rightEyeIris,
+                                rightEyeIrisF = rightEyeIrisFrame,
                                 nose = nose,
                                 upLip = upLip,
                                 downLip = downLip
