@@ -1,12 +1,6 @@
 #version 310 es
 
 precision highp float; // Define float precision
-uniform sampler2D Texture;
-in vec2 TexCoord;
-out vec4 FragColor;
-
-uniform vec2 leftEyeIris;
-uniform float leftEyeIrisRadius;
 
 // 圈内放大，intensity取值范围是0～1
 vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
@@ -21,6 +15,25 @@ vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float inte
     weight = clamp(weight, 0.0, 1.0);
     currentCoordinate = circleCenter + (currentCoordinate - circleCenter) * weight;
     return currentCoordinate;
+}
+
+/**
+  * 椭圆的方程: (x - h)^2 / a^2 + (y - k)^2 / b^2 = 1
+  * x = h + a * cost
+  * y = k + b * sint
+ */
+vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
+    float dx = currentCoordinate.x - center.x;
+    float dy = currentCoordinate.y - center.y;
+    float checkDistence = dx * dx / a * a + dy * dy / b * b;
+    if (checkDistence > 1.0) {
+        return currentCoordinate;
+    }
+    float distanceToCenter = distance(currentCoordinate, center);
+    float ovalX = center.x + a * dx / distanceToCenter;
+    float ovalY = center.y + b * dy / distanceToCenter;
+    float radius = distance(vec2(ovalX, ovalY), center);
+    return enlarge(currentCoordinate, center, radius, intensity);
 }
 
 // 圈内缩小，intensity取值范围是0～1
@@ -56,7 +69,15 @@ vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float ra
     return textureCoord;
 }
 
+uniform sampler2D Texture;
+in vec2 TexCoord;
+out vec4 FragColor;
+
+uniform vec2 leftEyeCenter;
+uniform float leftEyeA;
+uniform float leftEyeB;
+
 void main() {
-    vec2 fixedCoord = enlarge(TexCoord, leftEyeIris, leftEyeIrisRadius * 2.0, 0.5);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.8);
     FragColor = texture(Texture, fixedCoord);
 }

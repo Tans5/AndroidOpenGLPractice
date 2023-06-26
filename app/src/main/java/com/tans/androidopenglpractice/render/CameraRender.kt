@@ -180,17 +180,21 @@ class CameraRender : IShapeRender {
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "transform"), 1, false, transformMatrix, 0)
 
             val faceData = findFaceData()
-            val leftEyeIris = floatArrayOf(0.0f, 0.0f)
-            var leftEyeRadius = 0f
+            val leftEyeCenter = floatArrayOf(0.0f, 0.0f)
+            var leftEyeA = 0f
+            var leftEyeB = 0f
             if (faceData != null) {
-                val p = faceData.leftEyeIris[0]
-                val fixed = p.rotate(360.0f - rotation)
-                leftEyeIris[0] = fixed.x
-                leftEyeIris[1] = fixed.y
-                leftEyeRadius = p.distance(faceData.leftEyeIris[1])
+                val oval = faceData.leftEyeIrisF.computeFaceTextureOval()
+                val fixedCenter = oval.center.rotate(360.0f - rotation)
+                leftEyeCenter[0] = fixedCenter.x
+                leftEyeCenter[1] = fixedCenter.y
+                leftEyeA = oval.a
+                leftEyeB = oval.b
             }
-            GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeIris"), leftEyeIris[0], leftEyeIris[1])
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeIrisRadius"), leftEyeRadius)
+            GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeCenter"), leftEyeCenter[0], leftEyeCenter[1])
+            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeA"), leftEyeA)
+            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeB"), leftEyeB)
+
 
             val indices = intArrayOf(
                 0, 1, 2, // 第一个三角形
@@ -304,7 +308,11 @@ class CameraRender : IShapeRender {
 
                 drawFacePoints(
                     initData = initData,
-                    points = faceData.leftEyeIrisF,
+                    points =  arrayOf(
+                        faceData.leftEyeIrisF[0],
+                        faceData.leftEyeIrisF[6],
+                        faceData.leftEyeIrisF[12],
+                    ),
                     xMin = xMin,
                     xMax = xMax,
                     yMin = yMin,
@@ -329,7 +337,11 @@ class CameraRender : IShapeRender {
 
                 drawFacePoints(
                     initData = initData,
-                    points = faceData.rightEyeIrisF,
+                    points = arrayOf(
+                        faceData.rightEyeIrisF[0],
+                        faceData.rightEyeIrisF[6],
+                        faceData.rightEyeIrisF[12],
+                    ),
                     xMin = xMin,
                     xMax = xMax,
                     yMin = yMin,
@@ -527,11 +539,31 @@ class CameraRender : IShapeRender {
         return Point(x = (topLeftPoint.x + bottomRightPoint.x) / 2.0f, y = (topLeftPoint.y + bottomRightPoint.y) / 2.0f)
     }
 
+    private fun Array<Point>.computeFaceTextureOval(): Oval {
+        val leftPoint = get(0)
+        val rightPoint = get(6)
+        val topPoint = get(12)
+        val centerPoint = Point((leftPoint.x + rightPoint.x) / 2.0f, (leftPoint.y + rightPoint.y) / 2.0f)
+        val a = leftPoint.distance(rightPoint) / 2.0f
+        val b = topPoint.distance(centerPoint)
+        return Oval(
+            center = centerPoint,
+            a = a,
+            b = b
+        )
+    }
+
     companion object {
 
         data class Point(
             val x: Float,
             val y: Float
+        )
+
+        data class Oval(
+            val center: Point,
+            val a: Float,
+            val b: Float
         )
 
         data class FaceData(
@@ -550,7 +582,7 @@ class CameraRender : IShapeRender {
             val rightEye: Array<Point>,
             // 5 个点
             val leftEyeIris: Array<Point>,
-            // 15 个点
+            // 15 个点, 第 1 个点和第 7 个点构成椭圆的长轴，第 13 个点为短轴上部分的点，下部分的点需要计算.
             val leftEyeIrisF: Array<Point>,
             // 5 个点
             val rightEyeIris: Array<Point>,
