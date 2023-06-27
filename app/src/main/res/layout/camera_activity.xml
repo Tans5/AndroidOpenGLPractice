@@ -62,5 +62,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cam Change"/>
+
+        <Button
+            android:id="@+id/enlarge_eyes_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enlarge Eyes"/>
+
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

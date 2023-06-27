@@ -37,6 +37,8 @@ class CameraRender : IShapeRender {
 
     var renderFaceFrame: Boolean = true
 
+    var enlargeEyes: Boolean = true
+
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
@@ -180,21 +182,13 @@ class CameraRender : IShapeRender {
             GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.cameraProgram, "transform"), 1, false, transformMatrix, 0)
 
             val faceData = findFaceData()
-            val leftEyeCenter = floatArrayOf(0.0f, 0.0f)
-            var leftEyeA = 0f
-            var leftEyeB = 0f
-            if (faceData != null) {
-                val oval = faceData.leftEyeIrisF.computeFaceTextureOval()
-                val fixedCenter = oval.center.rotate(360.0f - rotation)
-                leftEyeCenter[0] = fixedCenter.x
-                leftEyeCenter[1] = fixedCenter.y
-                leftEyeA = oval.a
-                leftEyeB = oval.b
-            }
-            GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeCenter"), leftEyeCenter[0], leftEyeCenter[1])
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeA"), leftEyeA)
-            GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeB"), leftEyeB)
 
+            // 美颜
+            beautify(
+                initData = initData,
+                faceData = faceData,
+                rotation = rotation
+            )
 
             val indices = intArrayOf(
                 0, 1, 2, // 第一个三角形
@@ -203,193 +197,21 @@ class CameraRender : IShapeRender {
             GLES31.glBindBuffer(GLES31.GL_ELEMENT_ARRAY_BUFFER, initData.cameraEBO)
             GLES31.glBufferData(GLES31.GL_ELEMENT_ARRAY_BUFFER, indices.size * 4, indices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
             GLES31.glDrawElements(GLES31.GL_TRIANGLES, 6, GLES31.GL_UNSIGNED_INT, 0)
-            if (faceData != null && renderFaceFrame) {
-                /**
-                 * 绘制 face frame
-                 */
-                GLES31.glUseProgram(initData.faceProgram)
-                GLES31.glBindVertexArray(initData.faceVAO)
-                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
-                GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 6 * 4, 0)
-                GLES31.glEnableVertexAttribArray(0)
-                GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 6 * 4, 3 * 4)
-                GLES31.glEnableVertexAttribArray(1)
-                val textureRatio = (textureRb.x - textureTl.x) / (textureRb.y - textureTl.y)
-                Matrix.scaleM(viewMatrix, 0, 1 / textureRatio, 1.0f, 1.0f)
-                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
-                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
-                GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
-                GLES31.glLineWidth(3f)
 
-                // 绘制Frame
-                GLES31.glBindVertexArray(initData.faceVAO)
-                GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
-                val faceFrameVertices = faceData.faceFrame.toGlFacePoints(xMin, xMax, yMin, yMax, 1.0f,  0.0f, 0.0f)
-                GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, faceFrameVertices.size * 4, faceFrameVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
-                GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
-
-                // 绘制脸颊
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.check,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 左眉毛
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.leftEyebrow,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 右眉毛
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.rightEyebrow,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 左眼
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.leftEye,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 右眼
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.rightEye,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 左眼虹膜
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.leftEyeIris,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 1.0f,
-                    colorG = 0.0f,
-                    colorB = 0.0f
-                )
-
-                drawFacePoints(
-                    initData = initData,
-                    points =  arrayOf(
-                        faceData.leftEyeIrisF[0],
-                        faceData.leftEyeIrisF[6],
-                        faceData.leftEyeIrisF[12],
-                    ),
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 0.0f,
-                    colorB = 1.0f
-                )
-
-                // 右眼虹膜
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.rightEyeIris,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 1.0f,
-                    colorG = 0.0f,
-                    colorB = 0.0f
-                )
-
-                drawFacePoints(
-                    initData = initData,
-                    points = arrayOf(
-                        faceData.rightEyeIrisF[0],
-                        faceData.rightEyeIrisF[6],
-                        faceData.rightEyeIrisF[12],
-                    ),
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 0.0f,
-                    colorB = 1.0f
-                )
-
-                // 鼻子
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.nose,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 上嘴唇
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.upLip,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-
-                // 下嘴唇
-                drawFacePoints(
-                    initData = initData,
-                    points = faceData.downLip,
-                    xMin = xMin,
-                    xMax = xMax,
-                    yMin = yMin,
-                    yMax = yMax,
-                    colorR = 0.0f,
-                    colorG = 1.0f,
-                    colorB = 0.0f
-                )
-            }
+            // 绘制脸部框架
+            drawFaceFrame(
+                initData = initData,
+                textureTl = textureTl,
+                textureRb = textureRb,
+                viewMatrix = viewMatrix,
+                modelMatrix = modelMatrix,
+                transformMatrix = transformMatrix,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                faceData = faceData
+            )
         } else {
             imageData?.imageProxy?.close()
         }
@@ -420,6 +242,242 @@ class CameraRender : IShapeRender {
     }
 
 
+    /**
+     * 美颜
+     */
+    private fun beautify(initData: InitData, faceData: FaceData?, rotation: Int) {
+        // 大眼
+        val leftEyeCenter = floatArrayOf(0.0f, 0.0f)
+        var leftEyeAxisA = 0f
+        var leftEyeAxisB = 0f
+        val rightEyeCenter = floatArrayOf(0.0f, 0.0f)
+        var rightEyeAxisA = 0f
+        var rightEyeAxisB = 0f
+        if (faceData != null && enlargeEyes) {
+            val leftOval = faceData.leftEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
+            leftEyeCenter[0] = leftOval.center.x
+            leftEyeCenter[1] = leftOval.center.y
+            leftEyeAxisA = leftOval.a
+            leftEyeAxisB = leftOval.b
+            val rightOval = faceData.rightEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
+            rightEyeCenter[0] = rightOval.center.x
+            rightEyeCenter[1] = rightOval.center.y
+            rightEyeAxisA = rightOval.a
+            rightEyeAxisB = rightOval.b
+        }
+        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeCenter"), leftEyeCenter[0], leftEyeCenter[1])
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeA"), leftEyeAxisA)
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeB"), leftEyeAxisB)
+        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeCenter"), rightEyeCenter[0], rightEyeCenter[1])
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeA"), rightEyeAxisA)
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeB"), rightEyeAxisB)
+    }
+
+    /**
+     * 绘制脸部框架.
+     */
+    private fun drawFaceFrame(
+        initData: InitData,
+        textureTl: Point,
+        textureRb: Point,
+        viewMatrix: FloatArray,
+        modelMatrix: FloatArray,
+        transformMatrix: FloatArray,
+        xMin: Float,
+        xMax: Float,
+        yMin: Float,
+        yMax: Float,
+        faceData: FaceData?
+    ) {
+        if (faceData != null && renderFaceFrame) {
+            /**
+             * 绘制 face frame
+             */
+            GLES31.glUseProgram(initData.faceProgram)
+            GLES31.glBindVertexArray(initData.faceVAO)
+            GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
+            GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 6 * 4, 0)
+            GLES31.glEnableVertexAttribArray(0)
+            GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 6 * 4, 3 * 4)
+            GLES31.glEnableVertexAttribArray(1)
+            val textureRatio = (textureRb.x - textureTl.x) / (textureRb.y - textureTl.y)
+            Matrix.scaleM(viewMatrix, 0, 1 / textureRatio, 1.0f, 1.0f)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "view"), 1, false, viewMatrix, 0)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "model"), 1, false, modelMatrix, 0)
+            GLES31.glUniformMatrix4fv(GLES31.glGetUniformLocation(initData.faceProgram, "transform"), 1, false, transformMatrix, 0)
+            GLES31.glLineWidth(3f)
+
+            // 绘制Frame
+            GLES31.glBindVertexArray(initData.faceVAO)
+            GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, initData.faceVBO)
+            val faceFrameVertices = faceData.faceFrame.toGlFacePoints(xMin, xMax, yMin, yMax, 1.0f,  0.0f, 0.0f)
+            GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, faceFrameVertices.size * 4, faceFrameVertices.toGlBuffer(), GLES31.GL_STREAM_DRAW)
+            GLES31.glDrawArrays(GLES31.GL_LINE_LOOP, 0, faceFrameVertices.size / 6)
+
+            // 绘制脸颊
+            drawFacePoints(
+                initData = initData,
+                points = faceData.check,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 左眉毛
+            drawFacePoints(
+                initData = initData,
+                points = faceData.leftEyebrow,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 右眉毛
+            drawFacePoints(
+                initData = initData,
+                points = faceData.rightEyebrow,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 左眼
+            drawFacePoints(
+                initData = initData,
+                points = faceData.leftEye,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 右眼
+            drawFacePoints(
+                initData = initData,
+                points = faceData.rightEye,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 左眼虹膜
+            drawFacePoints(
+                initData = initData,
+                points = faceData.leftEyeIris,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 1.0f,
+                colorG = 0.0f,
+                colorB = 0.0f
+            )
+
+            drawFacePoints(
+                initData = initData,
+                points =  arrayOf(
+                    faceData.leftEyeIrisF[0],
+                    faceData.leftEyeIrisF[6],
+                    faceData.leftEyeIrisF[12],
+                ),
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 0.0f,
+                colorB = 1.0f
+            )
+
+            // 右眼虹膜
+            drawFacePoints(
+                initData = initData,
+                points = faceData.rightEyeIris,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 1.0f,
+                colorG = 0.0f,
+                colorB = 0.0f
+            )
+
+            drawFacePoints(
+                initData = initData,
+                points = arrayOf(
+                    faceData.rightEyeIrisF[0],
+                    faceData.rightEyeIrisF[6],
+                    faceData.rightEyeIrisF[12],
+                ),
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 0.0f,
+                colorB = 1.0f
+            )
+
+            // 鼻子
+            drawFacePoints(
+                initData = initData,
+                points = faceData.nose,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 上嘴唇
+            drawFacePoints(
+                initData = initData,
+                points = faceData.upLip,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+
+            // 下嘴唇
+            drawFacePoints(
+                initData = initData,
+                points = faceData.downLip,
+                xMin = xMin,
+                xMax = xMax,
+                yMin = yMin,
+                yMax = yMax,
+                colorR = 0.0f,
+                colorG = 1.0f,
+                colorB = 0.0f
+            )
+        }
+    }
+
     private fun drawFacePoints(
         initData: InitData,
         points: Array<Point>,
@@ -437,120 +495,8 @@ class CameraRender : IShapeRender {
         GLES31.glDrawArrays(GLES31.GL_POINTS, 0, vertices.size / 6)
     }
 
-    private fun Point.toGlPoint(xMin: Float, xMax: Float, yMin: Float, yMax: Float): FloatArray {
-        val scaleX = xMax - xMin
-        val scaleY = yMax - yMin
-        val dX = xMax - xMin
-        val dY = yMax - yMin
-        return floatArrayOf(x * scaleX - dX / 2f, y * - scaleY + dY / 2f)
-    }
-
     private fun findFaceData(): FaceData? {
         return pendingRenderFaceData.pollFirst()
-    }
-
-    private fun Array<Point>.toGlFacePoints(
-        xMin: Float,
-        xMax: Float,
-        yMin: Float,
-        yMax: Float,
-        colorR: Float,
-        colorG: Float,
-        colorB: Float): FloatArray {
-        return map { it.toGlPoint(xMin, xMax, yMin, yMax) }
-            .map {
-                it + floatArrayOf(0f, colorR, colorG, colorB)
-            }
-            .fold(floatArrayOf()) { old, new ->
-                old + new
-            }
-    }
-
-    private fun Point.distance(targetPoint: Point): Float {
-        val dx = x - targetPoint.x
-        val dy = y - targetPoint.y
-        return sqrt(dx * dx + dy * dy)
-    }
-
-    private fun Point.rotate(degree: Float, cx: Float = 0.5f, cy: Float = 0.5f): Point {
-        val transform = android.graphics.Matrix()
-        transform.setRotate(degree, cx, cy)
-        val array = floatArrayOf(x, y)
-        transform.mapPoints(array)
-        return Point(array[0], array[1])
-    }
-
-
-    private fun centerCropTextureRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
-        val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
-        val oldRectHeight = bottomRightPoint.y - topLeftPoint.y
-        val oldRectRatio = oldRectWidth / oldRectHeight
-        return when  {
-            oldRectRatio - targetRatio > 0.00001 -> {
-                // 裁剪 x
-                val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
-                val newTopLeftX = topLeftPoint.x + d
-                val newBottomRightX = bottomRightPoint.x - d
-                Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
-            }
-
-            targetRatio - oldRectRatio > 0.00001 -> {
-                // 裁剪 y
-                val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
-                val newTopLeftY = topLeftPoint.y + d
-                val newBottomRightY = bottomRightPoint.y - d
-                Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
-            }
-
-            else -> {
-                topLeftPoint to bottomRightPoint
-            }
-        }
-    }
-
-    private fun centerCropPositionRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
-        val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
-        val oldRectHeight = topLeftPoint.y - bottomRightPoint.y
-        val oldRectRatio = oldRectWidth / oldRectHeight
-        return when  {
-            oldRectRatio - targetRatio > 0.00001 -> {
-                // 裁剪 x
-                val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
-                val newTopLeftX = topLeftPoint.x + d
-                val newBottomRightX = bottomRightPoint.x - d
-                Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
-            }
-
-            targetRatio - oldRectRatio > 0.00001 -> {
-                // 裁剪 y
-                val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
-                val newTopLeftY = topLeftPoint.y - d
-                val newBottomRightY = bottomRightPoint.y + d
-                Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
-            }
-
-            else -> {
-                topLeftPoint to bottomRightPoint
-            }
-        }
-    }
-
-    private fun centerPoint(topLeftPoint: Point, bottomRightPoint: Point): Point {
-        return Point(x = (topLeftPoint.x + bottomRightPoint.x) / 2.0f, y = (topLeftPoint.y + bottomRightPoint.y) / 2.0f)
-    }
-
-    private fun Array<Point>.computeFaceTextureOval(): Oval {
-        val leftPoint = get(0)
-        val rightPoint = get(6)
-        val topPoint = get(12)
-        val centerPoint = Point((leftPoint.x + rightPoint.x) / 2.0f, (leftPoint.y + rightPoint.y) / 2.0f)
-        val a = leftPoint.distance(rightPoint) / 2.0f
-        val b = topPoint.distance(centerPoint)
-        return Oval(
-            center = centerPoint,
-            a = a,
-            b = b
-        )
     }
 
     companion object {
@@ -665,5 +611,133 @@ class CameraRender : IShapeRender {
             val faceVAO: Int,
             val faceVBO: Int
         )
+
+        private fun Array<Point>.toGlFacePoints(
+            xMin: Float,
+            xMax: Float,
+            yMin: Float,
+            yMax: Float,
+            colorR: Float,
+            colorG: Float,
+            colorB: Float): FloatArray {
+            return map { it.toGlPoint(xMin, xMax, yMin, yMax) }
+                .map {
+                    it + floatArrayOf(0f, colorR, colorG, colorB)
+                }
+                .fold(floatArrayOf()) { old, new ->
+                    old + new
+                }
+        }
+
+        private fun Point.distance(targetPoint: Point): Float {
+            val dx = x - targetPoint.x
+            val dy = y - targetPoint.y
+            return sqrt(dx * dx + dy * dy)
+        }
+
+        private fun Point.rotate(degree: Float, cx: Float = 0.5f, cy: Float = 0.5f): Point {
+            val transform = android.graphics.Matrix()
+            transform.setRotate(degree, cx, cy)
+            val array = floatArrayOf(x, y)
+            transform.mapPoints(array)
+            return Point(array[0], array[1])
+        }
+
+
+        private fun centerCropTextureRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
+            val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
+            val oldRectHeight = bottomRightPoint.y - topLeftPoint.y
+            val oldRectRatio = oldRectWidth / oldRectHeight
+            return when  {
+                oldRectRatio - targetRatio > 0.00001 -> {
+                    // 裁剪 x
+                    val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
+                    val newTopLeftX = topLeftPoint.x + d
+                    val newBottomRightX = bottomRightPoint.x - d
+                    Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
+                }
+
+                targetRatio - oldRectRatio > 0.00001 -> {
+                    // 裁剪 y
+                    val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
+                    val newTopLeftY = topLeftPoint.y + d
+                    val newBottomRightY = bottomRightPoint.y - d
+                    Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
+                }
+
+                else -> {
+                    topLeftPoint to bottomRightPoint
+                }
+            }
+        }
+
+        private fun centerCropPositionRect(targetRatio: Float, topLeftPoint: Point, bottomRightPoint: Point): Pair<Point, Point> {
+            val oldRectWidth = bottomRightPoint.x - topLeftPoint.x
+            val oldRectHeight = topLeftPoint.y - bottomRightPoint.y
+            val oldRectRatio = oldRectWidth / oldRectHeight
+            return when  {
+                oldRectRatio - targetRatio > 0.00001 -> {
+                    // 裁剪 x
+                    val d = (oldRectWidth - oldRectHeight * targetRatio) / 2.0f
+                    val newTopLeftX = topLeftPoint.x + d
+                    val newBottomRightX = bottomRightPoint.x - d
+                    Point(x = newTopLeftX, y = topLeftPoint.y) to Point(x = newBottomRightX, y = bottomRightPoint.y)
+                }
+
+                targetRatio - oldRectRatio > 0.00001 -> {
+                    // 裁剪 y
+                    val d = (oldRectHeight - oldRectWidth / targetRatio) / 2.0f
+                    val newTopLeftY = topLeftPoint.y - d
+                    val newBottomRightY = bottomRightPoint.y + d
+                    Point(x = topLeftPoint.x, y = newTopLeftY) to Point(x = bottomRightPoint.x, y = newBottomRightY)
+                }
+
+                else -> {
+                    topLeftPoint to bottomRightPoint
+                }
+            }
+        }
+
+        private fun centerPoint(topLeftPoint: Point, bottomRightPoint: Point): Point {
+            return Point(x = (topLeftPoint.x + bottomRightPoint.x) / 2.0f, y = (topLeftPoint.y + bottomRightPoint.y) / 2.0f)
+        }
+
+        private fun Array<Point>.computeFaceTextureOval(): Oval {
+            val leftPoint = get(0)
+            val rightPoint = get(6)
+            val topPoint = get(12)
+            val centerPoint = Point((leftPoint.x + rightPoint.x) / 2.0f, (leftPoint.y + rightPoint.y) / 2.0f)
+            val a = leftPoint.distance(rightPoint) / 2.0f
+            val b = topPoint.distance(centerPoint)
+            return Oval(
+                center = centerPoint,
+                a = a,
+                b = b
+            )
+        }
+
+        private fun Oval.rotate(degree: Int, cx: Float = 0.5f, cy: Float = 0.5f): Oval {
+            val newCenter = center.rotate(degree.toFloat(), cx, cy)
+            val (newA, newB) = when (degree) {
+                in 0 until  90 -> a to b
+                in 90 until  180 -> b to a
+                in 180 until 270 -> a to b
+                in 270 until  360 -> b to a
+                else ->  a to b
+            }
+            return Oval(
+                center = newCenter,
+                a = newA,
+                b = newB
+            )
+        }
+
+        private fun Point.toGlPoint(xMin: Float, xMax: Float, yMin: Float, yMax: Float): FloatArray {
+            val scaleX = xMax - xMin
+            val scaleY = yMax - yMin
+            val dX = xMax - xMin
+            val dY = yMax - yMin
+            return floatArrayOf(x * scaleX - dX / 2f, y * - scaleY + dY / 2f)
+        }
     }
 }

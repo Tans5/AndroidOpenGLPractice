@@ -202,6 +202,10 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.face_frame_bt).setOnClickListener {
                     render.renderFaceFrame = !render.renderFaceFrame
                 }
+
+                findViewById<Button>(R.id.enlarge_eyes_bt).setOnClickListener {
+                    render.enlargeEyes = !render.enlargeEyes
+                }
             }
         }
     }

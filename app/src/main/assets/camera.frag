@@ -25,7 +25,7 @@ vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float inte
 vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
     float dx = currentCoordinate.x - center.x;
     float dy = currentCoordinate.y - center.y;
-    float checkDistence = dx * dx / a * a + dy * dy / b * b;
+    float checkDistence = (dx * dx) / (a * a) + (dy * dy) / (b * b);
     if (checkDistence > 1.0) {
         return currentCoordinate;
     }
@@ -33,7 +33,7 @@ vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float in
     float ovalX = center.x + a * dx / distanceToCenter;
     float ovalY = center.y + b * dy / distanceToCenter;
     float radius = distance(vec2(ovalX, ovalY), center);
-    return enlarge(currentCoordinate, center, radius, intensity);
+    return enlarge(currentCoordinate, center, max(a, b), intensity);
 }
 
 // 圈内缩小，intensity取值范围是0～1
@@ -73,11 +73,18 @@ uniform sampler2D Texture;
 in vec2 TexCoord;
 out vec4 FragColor;
 
+// 左眼
 uniform vec2 leftEyeCenter;
 uniform float leftEyeA;
 uniform float leftEyeB;
 
+// 右眼
+uniform vec2 rightEyeCenter;
+uniform float rightEyeA;
+uniform float rightEyeB;
+
 void main() {
-    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.8);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
+    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 0.4);
     FragColor = texture(Texture, fixedCoord);
 }
