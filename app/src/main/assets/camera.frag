@@ -68,9 +68,12 @@ vec3 yuvToRgb(vec3 yuv) {
     float u = yuv.y;
     float v = yuv.z;
 
-    float r = y + 1.280 * (v - 128.0);
-    float g = y - 0.215 * (u - 128.0) - 0.381 * (v - 128.0);
-    float b = y + 2.128 * (u - 128.0);
+//    float r = y + 1.280 * (v - 128.0);
+//    float g = y - 0.215 * (u - 128.0) - 0.381 * (v - 128.0);
+//    float b = y + 2.128 * (u - 128.0);
+    float r = 1.164 * (y - 16.0) + 1.793 * (v - 128.0);
+    float g = 1.164 * (y - 16.0) - 0.213 * (u - 128.0) - 0.533 * (v - 128.0);
+    float b = 1.164 * (y - 16.0) + 2.112 * (u - 128.0);
 
     return vec3(r, g, b);
 }
