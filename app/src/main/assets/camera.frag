@@ -69,6 +69,31 @@ vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float ra
     return textureCoord;
 }
 
+
+vec3 rgbToYuv(vec3 rgb) {
+    float r = rgb.x;
+    float g = rgb.y;
+    float b = rgb.z;
+
+    float y = 0.183 * r + 0.614 * g + 0.062 * b + 16.0;
+    float u = -0.101 * r - 0.339 * g + 0.439 * b + 128.0;
+    float v = 0.439 * r - 0.399 * g - 0.040 * b + 128.0;
+
+    return vec3(y, u, v);
+}
+
+vec3 yuvToRgb(vec3 yuv) {
+    float y = yuv.x;
+    float u = yuv.y;
+    float v = yuv.z;
+
+    float r = y + 1.280 * (v - 128.0);
+    float g = y - 0.215 * (u - 128.0) - 0.381 * (v - 128.0);
+    float b = y + 2.128 * (u - 128.0);
+
+    return vec3(r, g, b);
+}
+
 uniform sampler2D Texture;
 in vec2 TexCoord;
 out vec4 FragColor;
@@ -84,7 +109,13 @@ uniform float rightEyeA;
 uniform float rightEyeB;
 
 void main() {
+    // 大眼
     vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
     fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 0.4);
-    FragColor = texture(Texture, fixedCoord);
+
+    vec4 outputColor = texture(Texture, fixedCoord);
+    vec3 yuv = rgbToYuv(vec3(outputColor.x * 255.0, outputColor.y * 255.0, outputColor.z * 255.0));
+    vec3 rgb = yuvToRgb(yuv);
+    outputColor = vec4(rgb.x / 255.0, rgb.y / 255.0, rgb.z / 255.0, 1.0);
+    FragColor = outputColor;
 }
