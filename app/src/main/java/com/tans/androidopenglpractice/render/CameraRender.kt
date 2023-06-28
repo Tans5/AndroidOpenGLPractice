@@ -41,6 +41,8 @@ class CameraRender : IShapeRender {
 
     var whitening: Boolean = true
 
+    var thinFace: Boolean = true
+
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
@@ -282,7 +284,7 @@ class CameraRender : IShapeRender {
         val stretchCenter = floatArrayOf(0.0f, 0.0f)
         val leftFaceThinCenter = floatArrayOf(0.0f, 0.0f)
         val rightFaceThinCenter = floatArrayOf(0.0f, 0.0f)
-        if (faceData != null) {
+        if (faceData != null && thinFace) {
             val thinData = faceData.computeThinFaceData(360 - rotation)
             thinRadius = thinData.thinRadius
             stretchCenter[0] = thinData.stretchCenter.x
@@ -651,8 +653,8 @@ class CameraRender : IShapeRender {
         )
 
         private fun FaceData.computeThinFaceData(degree: Int, cx: Float = 0.5f, cy: Float = 0.5f): ThinFaceData {
-            val leftFaceThinCenter = check[43].rotate(degree.toFloat(), cx, cy)
-            val rightFaceThinCenter = check[60].rotate(degree.toFloat(), cx, cy)
+            val leftFaceThinCenter = check[45].rotate(degree.toFloat(), cx, cy)
+            val rightFaceThinCenter = check[62].rotate(degree.toFloat(), cx, cy)
             val thinRadius = leftEyeIris[0].distance(rightEyeIris[0]) / 2.0f
             val stretchCenter = nose[43].rotate(degree.toFloat(), cx, cy)
             return ThinFaceData(

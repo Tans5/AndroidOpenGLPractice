@@ -33,21 +33,22 @@ vec2 shrink(vec2 currentCoordinate, vec2 circleCenter, float radius, float inten
     return currentCoordinate;
 }
 
-// 拉伸，curve就是指数，1，2，3，4这些
-vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float radius, float curve)
+// 瘦脸
+vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float radius, float strength)
 {
-    float currentDistance = distance(textureCoord, circleCenter);
-    if (currentDistance > radius) {
+    float k1 = distance(textureCoord, circleCenter);
+    if (k1 > radius) {
         return textureCoord;
     }
 
-    vec2 direction = targetPosition - circleCenter;
-    float weight = currentDistance / radius;
-    weight = 1.0 - pow(weight, curve);
-    weight = clamp(weight, 0.0, 1.0);
-    textureCoord = textureCoord - direction * weight;
+    float k0 = 100.0 / strength;
 
-    return textureCoord;
+    float tx = pow((pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0) + k0 * pow(targetPosition.x - circleCenter.x, 2.0)), 2.0) * (targetPosition.x - circleCenter.x);
+    float ty = pow((pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0) + k0 * pow(targetPosition.y - circleCenter.y, 2.0)), 2.0) * (targetPosition.y - circleCenter.y);
+
+    float nx = textureCoord.x - tx * (1.0 - k1 / radius);
+    float ny = textureCoord.y - ty * (1.0 - k1 / radius);
+    return vec2(nx, ny);
 }
 
 
@@ -137,6 +138,10 @@ void main() {
     // 大眼
     vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
     fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 0.4);
+
+    // 瘦脸
+    fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
+    fixedCoord = stretch(fixedCoord, rightFaceThinCenter, stretchCenter, thinRadius, 40.0);
 
     vec4 outputColor = texture(Texture, fixedCoord);
     // 美白

@@ -210,6 +210,10 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.whitening_bt).setOnClickListener {
                     render.whitening = !render.whitening
                 }
+
+                findViewById<Button>(R.id.thin_face_bt).setOnClickListener {
+                    render.thinFace = !render.thinFace
+                }
             }
         }
     }
