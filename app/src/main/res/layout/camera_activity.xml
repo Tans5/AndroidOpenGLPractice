@@ -69,5 +69,11 @@
             android:layout_height="wrap_content"
             android:text="Enlarge Eyes"/>
 
+        <Button
+            android:id="@+id/whitening_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Whitening"/>
+
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -17,25 +17,6 @@ vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float inte
     return currentCoordinate;
 }
 
-/**
-  * 椭圆的方程: (x - h)^2 / a^2 + (y - k)^2 / b^2 = 1
-  * x = h + a * cost
-  * y = k + b * sint
- */
-vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
-    float dx = currentCoordinate.x - center.x;
-    float dy = currentCoordinate.y - center.y;
-    float checkDistence = (dx * dx) / (a * a) + (dy * dy) / (b * b);
-    if (checkDistence > 1.0) {
-        return currentCoordinate;
-    }
-    float distanceToCenter = distance(currentCoordinate, center);
-    float ovalX = center.x + a * dx / distanceToCenter;
-    float ovalY = center.y + b * dy / distanceToCenter;
-    float radius = distance(vec2(ovalX, ovalY), center);
-    return enlarge(currentCoordinate, center, max(a, b), intensity);
-}
-
 // 圈内缩小，intensity取值范围是0～1
 vec2 shrink(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
 {
@@ -94,6 +75,38 @@ vec3 yuvToRgb(vec3 yuv) {
     return vec3(r, g, b);
 }
 
+
+/**
+  * 大眼
+  *
+  * 椭圆的方程: (x - h)^2 / a^2 + (y - k)^2 / b^2 = 1
+  * x = h + a * cost
+  * y = k + b * sint
+ */
+vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
+    float dx = currentCoordinate.x - center.x;
+    float dy = currentCoordinate.y - center.y;
+    float checkDistence = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+    if (checkDistence > 1.0) {
+        return currentCoordinate;
+    }
+    float distanceToCenter = distance(currentCoordinate, center);
+    float ovalX = center.x + a * dx / distanceToCenter;
+    float ovalY = center.y + b * dy / distanceToCenter;
+    float radius = distance(vec2(ovalX, ovalY), center);
+    return enlarge(currentCoordinate, center, max(a, b), intensity);
+}
+
+/**
+ * 美白
+ */
+vec3 whitening(vec3 rgb, float intensity) {
+    vec3 yuv255 = rgbToYuv(rgb * 255.0);
+    yuv255.x = log(yuv255.x / 255.0 * (intensity - 1.0) + 1.0) / log(intensity) * 255.0;
+    vec3 rgb255 = yuvToRgb(yuv255);
+    return rgb255 / 255.0;
+}
+
 uniform sampler2D Texture;
 in vec2 TexCoord;
 out vec4 FragColor;
@@ -108,14 +121,18 @@ uniform vec2 rightEyeCenter;
 uniform float rightEyeA;
 uniform float rightEyeB;
 
+// 美白
+uniform int whiteningSwitch;
+
 void main() {
     // 大眼
     vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
     fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 0.4);
 
     vec4 outputColor = texture(Texture, fixedCoord);
-    vec3 yuv = rgbToYuv(vec3(outputColor.x * 255.0, outputColor.y * 255.0, outputColor.z * 255.0));
-    vec3 rgb = yuvToRgb(yuv);
-    outputColor = vec4(rgb.x / 255.0, rgb.y / 255.0, rgb.z / 255.0, 1.0);
+    // 美白
+    if (whiteningSwitch == 1) {
+        outputColor = vec4(whitening(vec3(outputColor.x, outputColor.y, outputColor.z), 2.5), 1.0);
+    }
     FragColor = outputColor;
 }
