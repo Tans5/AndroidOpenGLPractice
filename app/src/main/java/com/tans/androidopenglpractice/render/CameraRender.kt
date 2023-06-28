@@ -276,6 +276,26 @@ class CameraRender : IShapeRender {
 
         // 美白
         GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whitening) 1 else 0)
+
+        // 瘦脸
+        var thinRadius = 0.0f
+        val stretchCenter = floatArrayOf(0.0f, 0.0f)
+        val leftFaceThinCenter = floatArrayOf(0.0f, 0.0f)
+        val rightFaceThinCenter = floatArrayOf(0.0f, 0.0f)
+        if (faceData != null) {
+            val thinData = faceData.computeThinFaceData(360 - rotation)
+            thinRadius = thinData.thinRadius
+            stretchCenter[0] = thinData.stretchCenter.x
+            stretchCenter[1] = thinData.stretchCenter.y
+            leftFaceThinCenter[0] = thinData.leftFaceThinCenter.x
+            leftFaceThinCenter[1] = thinData.leftFaceThinCenter.y
+            rightFaceThinCenter[0] = thinData.rightFaceThinCenter.x
+            rightFaceThinCenter[1] = thinData.rightFaceThinCenter.y
+        }
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "thinRadius"), thinRadius)
+        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "stretchCenter"), stretchCenter[0], stretchCenter[1])
+        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftFaceThinCenter"), leftFaceThinCenter[0], leftFaceThinCenter[1])
+        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightFaceThinCenter"), rightFaceThinCenter[0], rightFaceThinCenter[1])
     }
 
     /**
@@ -522,6 +542,9 @@ class CameraRender : IShapeRender {
             // 4 point
             val faceFrame: Array<Point>,
             // 69 个点
+            // 0 - 36: 左颧骨 -> 额头 -> 右颧骨 (37 个点)
+            // 37 - 53: 下巴 -> 左颧骨 (16 个点)
+            // 54 - 69： 下巴 -> 右颧骨 (16 个点)
             val check: Array<Point>,
             // 16 个点
             val leftEyebrow: Array<Point>,
@@ -540,6 +563,9 @@ class CameraRender : IShapeRender {
             // 15 个点
             val rightEyeIrisF: Array<Point>,
             // 47 个点
+            // 0 - 15 右鼻翼 (16 个点)
+            // 16 - 31 左鼻翼 (16 个点)
+            // 32 - 46 鼻对称线 (15 个点)
             val nose: Array<Point>,
             // 16 个点
             val upLip: Array<Point>,
@@ -616,6 +642,26 @@ class CameraRender : IShapeRender {
             val faceVAO: Int,
             val faceVBO: Int
         )
+
+        private data class ThinFaceData(
+            val leftFaceThinCenter: Point,
+            val rightFaceThinCenter: Point,
+            val thinRadius: Float,
+            val stretchCenter: Point
+        )
+
+        private fun FaceData.computeThinFaceData(degree: Int, cx: Float = 0.5f, cy: Float = 0.5f): ThinFaceData {
+            val leftFaceThinCenter = check[43].rotate(degree.toFloat(), cx, cy)
+            val rightFaceThinCenter = check[60].rotate(degree.toFloat(), cx, cy)
+            val thinRadius = leftEyeIris[0].distance(rightEyeIris[0]) / 2.0f
+            val stretchCenter = nose[43].rotate(degree.toFloat(), cx, cy)
+            return ThinFaceData(
+                leftFaceThinCenter = leftFaceThinCenter,
+                rightFaceThinCenter = rightFaceThinCenter,
+                thinRadius = thinRadius,
+                stretchCenter = stretchCenter
+            )
+        }
 
         private fun Array<Point>.toGlFacePoints(
             xMin: Float,

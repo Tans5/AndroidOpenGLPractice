@@ -127,6 +127,12 @@ uniform float rightEyeB;
 // 美白
 uniform int whiteningSwitch;
 
+// 瘦脸
+uniform float thinRadius;
+uniform vec2 stretchCenter;
+uniform vec2 leftFaceThinCenter;
+uniform vec2 rightFaceThinCenter;
+
 void main() {
     // 大眼
     vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
