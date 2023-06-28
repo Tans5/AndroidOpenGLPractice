@@ -5,16 +5,15 @@ precision highp float; // Define float precision
 // 圈内放大，intensity取值范围是0～1
 vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
 {
-    float currentDistance = distance(currentCoordinate, circleCenter);
-    if (currentDistance > radius) {
+    float dis = distance(currentCoordinate, circleCenter);
+    if (dis > radius) {
         return currentCoordinate;
     }
-    float weight = currentDistance / radius;
-    // weight 的指数可以是 2， 3， 4 等
-    weight = 1.0 - intensity * (1.0 - weight * weight);
-    weight = clamp(weight, 0.0, 1.0);
-    currentCoordinate = circleCenter + (currentCoordinate - circleCenter) * weight;
-    return currentCoordinate;
+    float k0 = intensity / 100.0;
+    float k = 1.0 - k0 * (1.0 - pow(dis / radius, 2.0));
+    float nx = (currentCoordinate.x - circleCenter.x) * k + circleCenter.x;
+    float ny = (currentCoordinate.y - circleCenter.y) * k + circleCenter.y;
+    return vec2(nx, ny);
 }
 
 // 圈内缩小，intensity取值范围是0～1
@@ -97,7 +96,7 @@ vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float in
     float distanceToCenter = distance(currentCoordinate, center);
     float ovalX = center.x + a * dx / distanceToCenter;
     float ovalY = center.y + b * dy / distanceToCenter;
-    float radius = distance(vec2(ovalX, ovalY), center);
+    // float radius = distance(vec2(ovalX, ovalY), center);
     return enlarge(currentCoordinate, center, max(a, b), intensity);
 }
 
@@ -136,8 +135,8 @@ uniform vec2 rightFaceThinCenter;
 
 void main() {
     // 大眼
-    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 0.4);
-    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 0.4);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 20.0);
+    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 20.0);
 
     // 瘦脸
     fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
