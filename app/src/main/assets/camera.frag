@@ -78,6 +78,19 @@ vec3 yuvToRgb(vec3 yuv) {
     return vec3(r, g, b);
 }
 
+/**
+ * 是否是皮肤颜色
+ */
+bool isSkinColor(vec4 color) {
+    float r = color.x * 255.0;
+    float g = color.y * 255.0;
+    float b = color.z * 255.0;
+    return r > 95.0 && g > 40.0 && b > 20.0 && r > g && r > b && (max(r, max(g, b)) - min(r, min(g, b))) > 15.0 && (abs(r - b) > 15.0);
+}
+
+bool checkTextureCoord(vec2 coord) {
+    return coord.x >= 0.0 && coord.x <= 1.0 && coord.y >= 0.0 && coord.y <= 1.0;
+}
 
 /**
   * 大眼
@@ -110,6 +123,100 @@ vec3 whitening(vec3 rgb, float intensity) {
     return rgb255 / 255.0;
 }
 
+/**
+ * 磨皮
+ */
+vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, float heightPixelStep, float radius) {
+    vec4 centerColor = texture(inputTexture, texCoord);
+    float colorSize = 1.0;
+    if (isSkinColor(centerColor)) {
+        vec2 upVec = vec2(0.0, - heightPixelStep);
+        vec2 upRightVec = vec2(widthPixelStep, - heightPixelStep);
+        vec2 rightVec = vec2(widthPixelStep, 0.0);
+        vec2 rightDownVec = vec2(widthPixelStep, heightPixelStep);
+        vec2 downVec = vec2(0.0, heightPixelStep);
+        vec2 downLeftVec = vec2(-widthPixelStep, heightPixelStep);
+        vec2 leftVec = vec2(-widthPixelStep, 0.0);
+        vec2 leftUpVec = vec2(-widthPixelStep, -heightPixelStep);
+        for (float i = 1.0; i <= radius; i = i + 1.0) {
+            vec2 u = texCoord + upVec * i;
+            if (checkTextureCoord(u)) {
+                vec4 c = texture(inputTexture, u);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 ur = texCoord + upRightVec * i;
+            if (checkTextureCoord(ur)) {
+                vec4 c = texture(inputTexture, ur);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 r = texCoord + rightVec * i;
+            if (checkTextureCoord(r)) {
+                vec4 c = texture(inputTexture, r);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 rd = texCoord + rightDownVec * i;
+            if (checkTextureCoord(rd)) {
+                vec4 c = texture(inputTexture, rd);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 d = texCoord + downVec * i;
+            if (checkTextureCoord(d)) {
+                vec4 c = texture(inputTexture, d);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 dl = texCoord + downLeftVec * i;
+            if (checkTextureCoord(dl)) {
+                vec4 c = texture(inputTexture, dl);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 l = texCoord + leftVec * i;
+            if (checkTextureCoord(l)) {
+                vec4 c = texture(inputTexture, l);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+
+            vec2 lu = texCoord + leftUpVec * i;
+            if (checkTextureCoord(lu)) {
+                vec4 c = texture(inputTexture, lu);
+                if (isSkinColor(c)) {
+                    centerColor = centerColor + c;
+                    colorSize = colorSize + 1.0;
+                }
+            }
+        }
+        return centerColor / colorSize;
+    } else {
+        return centerColor;
+    }
+}
+
 uniform sampler2D Texture;
 in vec2 TexCoord;
 out vec4 FragColor;
@@ -133,6 +240,11 @@ uniform vec2 stretchCenter;
 uniform vec2 leftFaceThinCenter;
 uniform vec2 rightFaceThinCenter;
 
+// 磨皮
+uniform int skinSmoothSwitch;
+uniform float textureWidthPixelStep;
+uniform float textureHeightPixelStep;
+
 void main() {
     // 大眼
     vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 20.0);
@@ -143,6 +255,13 @@ void main() {
     fixedCoord = stretch(fixedCoord, rightFaceThinCenter, stretchCenter, thinRadius, 40.0);
 
     vec4 outputColor = texture(Texture, fixedCoord);
+
+    // 磨皮
+    if (skinSmoothSwitch == 1) {
+        vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 8.0);
+        outputColor = mix(outputColor, smoothColor, 0.5);
+    }
+
     // 美白
     if (whiteningSwitch == 1) {
         outputColor = vec4(whitening(vec3(outputColor.x, outputColor.y, outputColor.z), 2.5), 1.0);

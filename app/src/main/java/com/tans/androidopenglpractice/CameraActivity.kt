@@ -219,6 +219,10 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.thin_face_bt).setOnClickListener {
                     render.thinFace = !render.thinFace
                 }
+
+                findViewById<Button>(R.id.smooth_skin_bt).setOnClickListener {
+                    render.smoothSkin = !render.smoothSkin
+                }
             }
         }
     }

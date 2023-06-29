@@ -81,5 +81,11 @@
             android:layout_height="wrap_content"
             android:text="Thin Face"/>
 
+        <Button
+            android:id="@+id/smooth_skin_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Smooth Skin"/>
+
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

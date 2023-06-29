@@ -54,6 +54,8 @@ class CameraRender : IShapeRender {
 
     var thinFace: Boolean = true
 
+    var smoothSkin: Boolean = true
+
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
         this.owner = owner
@@ -201,6 +203,7 @@ class CameraRender : IShapeRender {
             // 美颜
             beautify(
                 initData = initData,
+                imageData = imageData,
                 faceData = faceData,
                 rotation = rotation
             )
@@ -260,7 +263,7 @@ class CameraRender : IShapeRender {
     /**
      * 美颜
      */
-    private fun beautify(initData: InitData, faceData: FaceData?, rotation: Int) {
+    private fun beautify(initData: InitData, imageData: ImageData, faceData: FaceData?, rotation: Int) {
         // 大眼
         val leftEyeCenter = floatArrayOf(0.0f, 0.0f)
         var leftEyeAxisA = 0f
@@ -309,6 +312,12 @@ class CameraRender : IShapeRender {
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "stretchCenter"), stretchCenter[0], stretchCenter[1])
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftFaceThinCenter"), leftFaceThinCenter[0], leftFaceThinCenter[1])
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightFaceThinCenter"), rightFaceThinCenter[0], rightFaceThinCenter[1])
+
+
+        // 磨皮
+        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "skinSmoothSwitch"), if (smoothSkin) 1 else 0)
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "textureWidthPixelStep"), 1.0f / imageData.width.toFloat())
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "textureHeightPixelStep"), 1.0f / imageData.height.toFloat())
     }
 
     /**
