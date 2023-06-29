@@ -10,8 +10,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
-import com.tans.androidopenglpractice.render.CameraRender
+import com.tans.androidopenglpractice.render.camera.CameraRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
+import com.tans.androidopenglpractice.render.camera.FaceData
+import com.tans.androidopenglpractice.render.camera.ImageData
+import com.tans.androidopenglpractice.render.camera.ImageType
+import com.tans.androidopenglpractice.render.camera.Point
+import com.tans.androidopenglpractice.render.camera.ScaleType
 import com.tans.androidopenglpractice.render.toRgba
 import com.tans.androidopenglpractice.render.yuv420888ToNv21
 import com.tbruyelle.rxpermissions3.RxPermissions
@@ -59,12 +64,12 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                             val yuv = yuv420888ToNv21(imageProxy)
                             val width = imageProxy.cropRect.width()
                             val height = imageProxy.cropRect.height()
-                            CameraRender.Companion.ImageData(
+                            ImageData(
                                 image = yuv,
                                 width = width,
                                 height = height,
                                 rotation = imageProxy.imageInfo.rotationDegrees,
-                                imageType = CameraRender.Companion.ImageType.NV21,
+                                imageType = ImageType.NV21,
                                 imageProxy = imageProxy,
                                 timestamp = timestamp
                             )
@@ -74,12 +79,12 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                             val height = imageProxy.height
                             val rgba = ByteArray(width * height * 4)
                             imageProxy.toRgba(rgba)
-                            CameraRender.Companion.ImageData(
+                            ImageData(
                                 image = rgba,
                                 width = width,
                                 height = height,
                                 rotation = imageProxy.imageInfo.rotationDegrees,
-                                imageType = CameraRender.Companion.ImageType.RGBA,
+                                imageType = ImageType.RGBA,
                                 imageProxy = imageProxy,
                                 timestamp = timestamp
                             )
@@ -104,8 +109,8 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                             this.width = imageData.width
                             this.height = imageData.height
                             this.format = when (imageData.imageType) {
-                                CameraRender.Companion.ImageType.NV21 -> ImageConfig.FaceImageFormat.YUV
-                                CameraRender.Companion.ImageType.RGBA -> ImageConfig.FaceImageFormat.RGBA
+                                ImageType.NV21 -> ImageConfig.FaceImageFormat.YUV
+                                ImageType.RGBA -> ImageConfig.FaceImageFormat.RGBA
                             }
                         }
                         val face = TengineKitSdk.getInstance().detectFace(imageConfig, faceConfig)?.getOrNull(0)
@@ -120,36 +125,36 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                             val upLip = getCameraPoints(landmark, 180, 16)
                             val downLip = getCameraPoints(landmark, 196, 16)
                             val leftEyeIris = Array(5) {
-                                CameraRender.Companion.Point(
+                                Point(
                                     x =  face.eyeIrisLeft[it * 3],
                                     y = face.eyeIrisLeft[it * 3 + 1]
                                 )
                             }
                             val rightEyeIris = Array(5) {
-                                CameraRender.Companion.Point(
+                                Point(
                                     x =  face.eyeIrisRight[it * 3],
                                     y = face.eyeIrisRight[it * 3 + 1]
                                 )
                             }
                             val leftEyeIrisFrame = Array(15) {
-                                CameraRender.Companion.Point(
+                                Point(
                                     x = face.eyeLandMarkLeft[it * 3],
                                     y = face.eyeLandMarkLeft[it * 3 + 1]
                                 )
                             }
                             val rightEyeIrisFrame = Array(15) {
-                                CameraRender.Companion.Point(
+                                Point(
                                     x = face.eyeLandMarkRight[it * 3],
                                     y = face.eyeLandMarkRight[it * 3 + 1]
                                 )
                             }
-                            val faceData = CameraRender.Companion.FaceData(
+                            val faceData = FaceData(
                                 timestamp = timestamp,
                                 faceFrame = arrayOf(
-                                    CameraRender.Companion.Point(face.x1, face.y1),
-                                    CameraRender.Companion.Point(face.x2, face.y1),
-                                    CameraRender.Companion.Point(face.x2, face.y2),
-                                    CameraRender.Companion.Point(face.x1, face.y2)
+                                    Point(face.x1, face.y1),
+                                    Point(face.x2, face.y1),
+                                    Point(face.x2, face.y2),
+                                    Point(face.x1, face.y2)
                                 ),
                                 check = check,
                                 leftEyebrow = leftEyebrow,
@@ -188,11 +193,11 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 }
 
                 findViewById<Button>(R.id.cam_crop_bt).setOnClickListener {
-                    render.scaleType = CameraRender.Companion.ScaleType.CenterCrop
+                    render.scaleType = ScaleType.CenterCrop
                 }
 
                 findViewById<Button>(R.id.cam_fit_bt).setOnClickListener {
-                    render.scaleType = CameraRender.Companion.ScaleType.CenterFit
+                    render.scaleType = ScaleType.CenterFit
                 }
 
                 findViewById<Button>(R.id.cam_mirror_bt).setOnClickListener {
@@ -243,11 +248,11 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
         TengineKitSdk.getInstance().release()
     }
 
-    private fun getCameraPoints(dataSource: FloatArray, offset: Int, pointSize: Int): Array<CameraRender.Companion.Point> {
+    private fun getCameraPoints(dataSource: FloatArray, offset: Int, pointSize: Int): Array<Point> {
         return Array(pointSize) { i ->
             val ix = (offset + i) * 2
             val iy = ix + 1
-            CameraRender.Companion.Point(dataSource[ix], dataSource[iy])
+            Point(dataSource[ix], dataSource[iy])
         }
     }
 
