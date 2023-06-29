@@ -132,11 +132,11 @@ vec3 whitening(vec3 rgb, float intensity) {
 
 
 
-vec4 skinColors[81];
-float skinColorsRate[81];
+vec4 skinColors[33];
+float skinColorsRate[33];
 /**
  * 磨皮
- * radius 最大 10
+ * radius 最大 4
  */
 vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, float heightPixelStep, float radius) {
     vec4 centerColor = texture(inputTexture, texCoord);
@@ -164,12 +164,10 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
         vec2 leftUpVec = vec2(-widthPixelStep, -heightPixelStep);
         for (float i = 1.0; i <= radius; i = i + 1.0) {
             vec2 u = texCoord + upVec * i;
+            float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i);
             if (checkTextureCoord(u)) {
                 vec4 c = texture(inputTexture, u);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -180,9 +178,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(ur)) {
                 vec4 c = texture(inputTexture, ur);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -193,9 +188,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(r)) {
                 vec4 c = texture(inputTexture, r);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -206,9 +198,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(rd)) {
                 vec4 c = texture(inputTexture, rd);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -219,9 +208,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(d)) {
                 vec4 c = texture(inputTexture, d);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -232,9 +218,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(dl)) {
                 vec4 c = texture(inputTexture, dl);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -245,9 +228,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(l)) {
                 vec4 c = texture(inputTexture, l);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -258,9 +238,6 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
             if (checkTextureCoord(lu)) {
                 vec4 c = texture(inputTexture, lu);
                 if (isSkinColor(c)) {
-                    vec4 diffColor = c - centerColor;
-                    float colorDiffRate = 1.0 - (diffColor.x + diffColor.y + diffColor.z) / 3.0;
-                    float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i) * colorDiffRate;
                     colorRateSum += colorRate;
                     skinColors[colorsCount++] = c;
                     skinColorsRate[colorsCount] = colorRate;
@@ -321,7 +298,7 @@ void main() {
     // 磨皮
     if (skinSmoothSwitch == 1) {
         vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 4.0);
-        outputColor = mix(outputColor, smoothColor, 0.5);
+        outputColor = mix(outputColor, smoothColor, 0.8);
     }
 
     // 美白
