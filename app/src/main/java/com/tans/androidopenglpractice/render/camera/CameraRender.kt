@@ -272,13 +272,13 @@ class CameraRender : IShapeRender {
             val leftOval = faceData.leftEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
             leftEyeCenter[0] = leftOval.center.x
             leftEyeCenter[1] = leftOval.center.y
-            leftEyeAxisA = leftOval.a * 1.2f
-            leftEyeAxisB = leftOval.b * 1.2f
+            leftEyeAxisA = leftOval.a * 1.1f
+            leftEyeAxisB = leftOval.b * 1.1f
             val rightOval = faceData.rightEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
             rightEyeCenter[0] = rightOval.center.x
             rightEyeCenter[1] = rightOval.center.y
-            rightEyeAxisA = rightOval.a * 1.2f
-            rightEyeAxisB = rightOval.b * 1.2f
+            rightEyeAxisA = rightOval.a * 1.1f
+            rightEyeAxisB = rightOval.b * 1.1f
         }
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeCenter"), leftEyeCenter[0], leftEyeCenter[1])
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeA"), leftEyeAxisA)

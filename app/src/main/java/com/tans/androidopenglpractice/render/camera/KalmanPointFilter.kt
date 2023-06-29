@@ -28,16 +28,21 @@ class KalmanPointFilter {
         kalman.error_cov_post = kalman.error_cov_post.identity()
     }
 
-    fun filter(input: Point): Point {
+    fun filter(input: Point, minDistance: Float = 0.018f): Point {
         return try {
             val predict = kalman.Predict()
             inputMatrix.set(0, 0, input.x.toDouble())
             inputMatrix.set(1, 0, input.y.toDouble())
             kalman.Correct(inputMatrix)
-            Point(
+            val predictPoint = Point(
                 x = predict.get(0, 0).toFloat(),
                 y = predict.get(1, 0).toFloat()
             )
+            if (predictPoint.distance(input) < minDistance) {
+                predictPoint
+            } else {
+                input
+            }
         }  catch (e: Throwable) {
             e.printStackTrace()
             input
