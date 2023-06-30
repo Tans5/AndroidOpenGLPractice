@@ -131,12 +131,8 @@ vec3 whitening(vec3 rgb, float intensity) {
 }
 
 
-
-vec4 skinColors[33];
-float skinColorsRate[33];
 /**
  * 磨皮
- * radius 最大 4
  */
 vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, float heightPixelStep, float radius) {
     vec4 centerColor = texture(inputTexture, texCoord);
@@ -144,14 +140,9 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
     if (isSkinColor(centerColor)) {
         float gauthMaxValue = 1.0;
         float gauthCenterLine = 0.0;
-        float gauthChangeRate = 3.0;
+        float gauthChangeRate = 6.0;
 
-        // radius 最大 10
-//        vec4 colors[65];
-//        float colorsRate[65];
-        int colorsCount = 1;
-        skinColors[0] = centerColor;
-        skinColorsRate[0] = 1.0;
+        vec4 colorSum = centerColor;
         float colorRateSum = 1.0;
 
         vec2 upVec = vec2(0.0, - heightPixelStep);
@@ -163,14 +154,13 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
         vec2 leftVec = vec2(-widthPixelStep, 0.0);
         vec2 leftUpVec = vec2(-widthPixelStep, -heightPixelStep);
         for (float i = 1.0; i <= radius; i = i + 1.0) {
-            vec2 u = texCoord + upVec * i;
             float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i);
+            vec2 u = texCoord + upVec * i;
             if (checkTextureCoord(u)) {
                 vec4 c = texture(inputTexture, u);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -179,8 +169,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, ur);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -189,8 +178,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, r);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -199,8 +187,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, rd);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -209,8 +196,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, d);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -219,8 +205,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, dl);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -229,8 +214,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, l);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
 
@@ -239,18 +223,11 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
                 vec4 c = texture(inputTexture, lu);
                 if (isSkinColor(c)) {
                     colorRateSum += colorRate;
-                    skinColors[colorsCount++] = c;
-                    skinColorsRate[colorsCount] = colorRate;
+                    colorSum += colorRate * c;
                 }
             }
         }
-        vec4 fixedColor = vec4(0.0, 0.0, 0.0, 0.0);
-        for (int i = 0; i < colorsCount; i ++) {
-            float r = skinColorsRate[i] / colorRateSum;
-            vec4 c = skinColors[i];
-            fixedColor += c * r;
-        }
-        return fixedColor;
+        return colorSum / colorRateSum;
     } else {
         return centerColor;
     }
@@ -298,7 +275,7 @@ void main() {
     // 磨皮
     if (skinSmoothSwitch == 1) {
         vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 4.0);
-        outputColor = mix(outputColor, smoothColor, 0.8);
+        outputColor = mix(outputColor, smoothColor, 0.6);
     }
 
     // 美白

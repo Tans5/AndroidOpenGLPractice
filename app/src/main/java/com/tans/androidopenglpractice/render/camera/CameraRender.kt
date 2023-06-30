@@ -46,7 +46,7 @@ class CameraRender : IShapeRender {
 
     var mirror: Boolean = true
 
-    var renderFaceFrame: Boolean = true
+    var renderFaceFrame: Boolean = false
 
     var enlargeEyes: Boolean = true
 
