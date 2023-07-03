@@ -11,6 +11,14 @@ import java.nio.ByteOrder
 
 private const val TAG = "GLImageUtils"
 
+private val imageVAO: Int by lazy {
+    glGenVertexArrays()
+}
+
+private val imageVBO: Int by lazy {
+    glGenBuffers()
+}
+
 /**
  * 获取纹理图片，格式为 RGBA.
  */
@@ -26,11 +34,6 @@ fun readGlTextureImageBytes(
     GLES31.glGenTextures(1, fboTexture, 0)
     GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture[0])
     GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
-    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_S, GLES31.GL_REPEAT)
-    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_WRAP_T, GLES31.GL_REPEAT)
-    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
-    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
-    GLES31.glGenerateMipmap(GLES31.GL_TEXTURE_2D)
     GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA,
     width, height, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null)
 
@@ -55,6 +58,9 @@ fun readGlTextureImageBytes(
 
     GLES31.glUseProgram(program)
 
+    GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId)
+
     val vertices = floatArrayOf(
         // 坐标(position 0)   // 纹理坐标
         -1.0f, 1.0f, 0.0f,   0.0f, 0.0f,    // 左上角
@@ -63,24 +69,25 @@ fun readGlTextureImageBytes(
         -1.0f, 1.0f, 0.0f,   0.0f, 1.0f,   // 左下角
         0.0f
     )
-    val VAO = glGenVertexArrays()
-    val VBO = glGenBuffers()
-    GLES31.glBindVertexArray(VAO)
-    GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, VBO)
+    GLES31.glBindVertexArray(imageVAO)
+    GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, imageVBO)
     GLES31.glVertexAttribPointer(0, 3, GLES31.GL_FLOAT, false, 20, 0)
     GLES31.glEnableVertexAttribArray(0)
     GLES31.glVertexAttribPointer(1, 2, GLES31.GL_FLOAT, false, 20, 12)
     GLES31.glEnableVertexAttribArray(1)
     GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, textureId)
     GLES31.glDrawArrays(GLES31.GL_TRIANGLE_FAN, 0, 4)
-
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, 0)
 
     GLES31.glUseProgram(0)
     GLES31.glDeleteProgram(program)
     GLES31.glFinish()
+
+    GLES31.glViewport(lastViewPort[0], lastViewPort[1], lastViewPort[2], lastViewPort[3])
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
+    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_NONE)
+
     val imageBytes = ByteArray(width * height * 4)
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture[0])
     GLES31.glReadPixels(
         0, 0,
         width, height,
@@ -89,9 +96,6 @@ fun readGlTextureImageBytes(
         ByteBuffer.wrap(imageBytes)
     )
 
-    GLES31.glViewport(lastViewPort[0], lastViewPort[1], lastViewPort[2], lastViewPort[3])
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
-    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_NONE)
     GLES31.glDeleteTextures(1, fboTexture, 0)
     GLES31.glDeleteFramebuffers(1, frameBuffer, 0)
     return imageBytes
