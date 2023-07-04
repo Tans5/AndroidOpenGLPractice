@@ -63,3 +63,10 @@ fun glGenTexture(): Int {
     buffer.position(0)
     return buffer.get()
 }
+
+fun glGenFrameBuffer(): Int {
+    val buffer = newGlIntBuffer()
+    GLES31.glGenFramebuffers(1, buffer)
+    buffer.position(0)
+    return buffer.get()
+}

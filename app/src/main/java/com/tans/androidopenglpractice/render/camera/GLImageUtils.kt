@@ -4,6 +4,8 @@ import android.content.Context
 import android.opengl.GLES31
 import android.util.Log
 import com.tans.androidopenglpractice.render.glGenBuffers
+import com.tans.androidopenglpractice.render.glGenFrameBuffer
+import com.tans.androidopenglpractice.render.glGenTexture
 import com.tans.androidopenglpractice.render.glGenVertexArrays
 import com.tans.androidopenglpractice.render.toGlBuffer
 import java.nio.ByteBuffer
@@ -29,23 +31,30 @@ fun readGlTextureImageBytes(
     height: Int
 ): ByteArray? {
 
-    // 生成纹理
-    val fboTexture = IntArray(1)
-    GLES31.glGenTextures(1, fboTexture, 0)
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture[0])
-    GLES31.glActiveTexture(GLES31.GL_TEXTURE0)
+    // 生成帧缓冲
+    val fbo = glGenFrameBuffer()
+    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, fbo)
+
+    // 生成帧缓冲的附件纹理
+    val fboTexture = glGenTexture()
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture)
+    // 纹理的数据设置为空，大小为图片大小, 光申请内存不填充，渲染时填充
     GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA,
-    width, height, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null)
+        width, height, 0, GLES31.GL_RGBA, GLES31.GL_UNSIGNED_BYTE, null)
+    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MIN_FILTER, GLES31.GL_LINEAR)
+    GLES31.glTexParameteri(GLES31.GL_TEXTURE_2D, GLES31.GL_TEXTURE_MAG_FILTER, GLES31.GL_LINEAR)
 
-    // 生成 Frame Buffer
-    val frameBuffer = IntArray(1)
-    GLES31.glGenFramebuffers(1, frameBuffer, 0)
-    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, frameBuffer[0])
-    // 将生成的纹理附着到 FBO
+    // 为帧缓冲添加纹理附件(颜色)
     GLES31.glFramebufferTexture2D(GLES31.GL_FRAMEBUFFER, GLES31.GL_COLOR_ATTACHMENT0,
-        GLES31.GL_TEXTURE_2D, fboTexture[0], 0)
+        GLES31.GL_TEXTURE_2D, fboTexture, 0)
 
-    // 获取当前的 view port.
+    val frameBufferStatus = GLES31.glCheckFramebufferStatus(GLES31.GL_FRAMEBUFFER)
+    if (frameBufferStatus != GLES31.GL_FRAMEBUFFER_COMPLETE) {
+        Log.e(TAG, "Create frame buffer fail: $frameBufferStatus")
+        return null
+    }
+
+    // 获取当前的 view port, 离屏渲染完成后，需要还原
     val lastViewPort = IntArray(4)
     GLES31.glGetIntegerv(GLES31.GL_VIEWPORT, lastViewPort, 0)
 
@@ -78,16 +87,11 @@ fun readGlTextureImageBytes(
     GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
     GLES31.glDrawArrays(GLES31.GL_TRIANGLE_FAN, 0, 4)
 
-    GLES31.glUseProgram(0)
-    GLES31.glDeleteProgram(program)
-    GLES31.glFinish()
-
-    GLES31.glViewport(lastViewPort[0], lastViewPort[1], lastViewPort[2], lastViewPort[3])
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
-    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, GLES31.GL_NONE)
+    // 激活默认缓冲
+    // GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
 
     val imageBytes = ByteArray(width * height * 4)
-    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture[0])
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture)
     GLES31.glReadPixels(
         0, 0,
         width, height,
@@ -96,8 +100,19 @@ fun readGlTextureImageBytes(
         ByteBuffer.wrap(imageBytes)
     )
 
-    GLES31.glDeleteTextures(1, fboTexture, 0)
-    GLES31.glDeleteFramebuffers(1, frameBuffer, 0)
+    GLES31.glUseProgram(0)
+    GLES31.glDeleteProgram(program)
+    GLES31.glFinish()
+
+    GLES31.glViewport(lastViewPort[0], lastViewPort[1], lastViewPort[2], lastViewPort[3])
+    // GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
+
+    // 激活默认缓冲
+    GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
+
+    GLES31.glDeleteTextures(1, intArrayOf(fboTexture), 0)
+    GLES31.glDeleteFramebuffers(1, intArrayOf(fbo) , 0)
+
     return imageBytes
 }
 
