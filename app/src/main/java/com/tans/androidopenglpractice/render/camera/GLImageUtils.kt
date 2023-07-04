@@ -13,6 +13,29 @@ import java.nio.ByteOrder
 
 private const val TAG = "GLImageUtils"
 
+private const val simpleImageVertSource: String = """#version 310 es
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoord;
+out vec2 TexCoord;
+
+void main() {
+    gl_Position = vec4(aPos, 1.0);
+    TexCoord = aTexCoord;
+}
+"""
+
+private const val simpleImageFragSource: String = """#version 310 es
+precision highp float; // Define float precision
+in vec2 TexCoord;
+out vec4 FragColor;
+
+uniform sampler2D Texture;
+
+void main() {
+    FragColor = texture(Texture, TexCoord);
+}
+"""
+
 private val imageVAO: Int by lazy {
     glGenVertexArrays()
 }
@@ -25,7 +48,6 @@ private val imageVBO: Int by lazy {
  * 获取纹理图片，格式为 RGBA.
  */
 fun readGlTextureImageBytes(
-    context: Context,
     textureId: Int,
     width: Int,
     height: Int
@@ -63,7 +85,7 @@ fun readGlTextureImageBytes(
     GLES31.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
     GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
 
-    val program = compileShaderFromAssets(context, "simple_image.vert", "simple_image.frag") ?: return null
+    val program = compileShaderProgram(simpleImageVertSource, simpleImageFragSource) ?: return null
 
     GLES31.glUseProgram(program)
 
@@ -85,9 +107,8 @@ fun readGlTextureImageBytes(
     GLES31.glEnableVertexAttribArray(1)
     GLES31.glBufferData(GLES31.GL_ARRAY_BUFFER, vertices.size * 4, vertices.toGlBuffer(), GLES31.GL_STATIC_DRAW)
     GLES31.glDrawArrays(GLES31.GL_TRIANGLE_FAN, 0, 4)
-
-    // 激活默认缓冲
-    // GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
+    GLES31.glBindVertexArray(GLES31.GL_NONE)
+    GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, GLES31.GL_NONE)
 
     val imageBytes = ByteArray(width * height * 4)
     GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, fboTexture)
@@ -104,7 +125,7 @@ fun readGlTextureImageBytes(
     GLES31.glFinish()
 
     GLES31.glViewport(lastViewPort[0], lastViewPort[1], lastViewPort[2], lastViewPort[3])
-    // GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
+    GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, GLES31.GL_NONE)
 
     // 激活默认缓冲
     GLES31.glBindFramebuffer(GLES31.GL_FRAMEBUFFER, 0)
