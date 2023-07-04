@@ -96,6 +96,14 @@ class CameraRender : IShapeRender {
         val imageData = pendingRenderFrames.pollFirst()
         if (initData != null && imageData != null) {
             GLES31.glClear(GLES31.GL_COLOR_BUFFER_BIT)
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.cameraTexture)
+            val bitmap = when (imageData.imageType) {
+                ImageType.NV21 -> imageData.image.nv21ToBitmap(imageData.width, imageData.height)
+                ImageType.RGBA -> imageData.image.rgbaToBitmap(imageData.width, imageData.height)
+            }
+            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
+            bitmap.recycle()
+            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.cameraTexture)
             GLES31.glUseProgram(initData.cameraProgram)
             val rotation = imageData.rotation % 360
             val (imageWidth, imageHeight) = when (rotation) {
@@ -167,14 +175,6 @@ class CameraRender : IShapeRender {
             GLES31.glEnableVertexAttribArray(0)
             GLES31.glVertexAttribPointer(1, 3, GLES31.GL_FLOAT, false, 5 * 4, 3 * 4)
             GLES31.glEnableVertexAttribArray(1)
-
-            GLES31.glBindTexture(GLES31.GL_TEXTURE_2D, initData.cameraTexture)
-            val bitmap = when (imageData.imageType) {
-                ImageType.NV21 -> imageData.image.nv21ToBitmap(imageData.width, imageData.height)
-                ImageType.RGBA -> imageData.image.rgbaToBitmap(imageData.width, imageData.height)
-            }
-            GLUtils.texImage2D(GLES31.GL_TEXTURE_2D, 0, bitmap, 0)
-            bitmap.recycle()
             imageData.imageProxy.close()
 //            val rgbaBytes = ByteArray(imageWidth * imageHeight * 4)
 //            GLES31.glTexImage2D(GLES31.GL_TEXTURE_2D, 0, GLES31.GL_RGBA, imageWidth, imageHeight, 0,
