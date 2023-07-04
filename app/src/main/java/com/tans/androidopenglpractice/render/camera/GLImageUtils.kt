@@ -94,10 +94,10 @@ fun readGlTextureImageBytes(
 
     val vertices = floatArrayOf(
         // 坐标(position 0)   // 纹理坐标
-        -1.0f, 1.0f, 0.0f,   0.0f, 0.0f,    // 左上角
-        1.0f, 1.0f, 0.0f,    1.0f, 0.0f,   // 右上角
-        1.0f, -1.0f, 0.0f,   1.0f, 1.0f,   // 右下角
-        -1.0f, -1.0f, 0.0f,   0.0f, 1.0f,   // 左下角
+        -1.0f, 1.0f, 0.0f,   0.0f, 1.0f,    // 左上角
+        1.0f, 1.0f, 0.0f,    1.0f, 1.0f,   // 右上角
+        1.0f, -1.0f, 0.0f,   1.0f, 0.0f,   // 右下角
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,   // 左下角
     )
     GLES31.glBindVertexArray(imageVAO)
     GLES31.glBindBuffer(GLES31.GL_ARRAY_BUFFER, imageVBO)
