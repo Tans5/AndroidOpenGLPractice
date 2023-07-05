@@ -106,18 +106,39 @@ float gauthFunc(float maxValue, float centerLine, float changeRate, float x) {
   * x = h + a * cost
   * y = k + b * sint
  */
-vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float strength) {
+vec2 enlargeOval(vec2 currentCoordinate, vec2 center, vec2 iris, float a, float b, float strength) {
     float dx = currentCoordinate.x - center.x;
     float dy = currentCoordinate.y - center.y;
     float checkDistence = (dx * dx) / (a * a) + (dy * dy) / (b * b);
     if (checkDistence > 1.0) {
         return currentCoordinate;
     }
-    float distanceToCenter = distance(currentCoordinate, center);
-    float ovalX = center.x + a * dx / distanceToCenter;
-    float ovalY = center.y + b * dy / distanceToCenter;
-    float radius = distance(vec2(ovalX, ovalY), center);
-    return enlarge(currentCoordinate, center, radius, strength);
+    float lineA = (currentCoordinate.y - iris.y) / (currentCoordinate.x - iris.x);
+    float lineB = (currentCoordinate.y * iris.x - currentCoordinate.x * iris.y) / (iris.x - currentCoordinate.x);
+    float fucA = ((1.0 / pow(a, 2.0)) + (pow(lineA, 2.0) / pow(b, 2.0)));
+    float fucB = ((2.0 * lineA * (lineB - center.y)) / pow(b, 2.0)) - (2.0 * center.x) / pow(a, 2.0);
+    float fucC = pow(center.x / a, 2.0) + pow((lineB - center.y) / b, 2.0) - 1.0;
+    float x1 = (- fucB + sqrt(pow(fucB, 2.0) - 4.0 * fucA * fucC)) / (2.0 * fucA);
+    float y1 = lineA * x1 + lineB;
+    float x2 = (- fucB - sqrt(pow(fucB, 2.0) - 4.0 * fucA * fucC)) / (2.0 * fucA);
+    float y2 = lineA * x2 + lineB;
+    float x = 0.0;
+    float y = 0.0;
+    float d1 = distance(vec2(x1, y1), currentCoordinate);
+    float d2 = distance(vec2(x2, y2), currentCoordinate);
+    if (d1 < d2) {
+        x = x1;
+        y = y1;
+    } else {
+        x = x2;
+        y = y2;
+    }
+//    float distanceToCenter = distance(currentCoordinate, center);
+//    float ovalX = center.x + a * dx / distanceToCenter;
+//    float ovalY = center.y + b * dy / distanceToCenter;
+//    float radius = distance(vec2(ovalX, ovalY), center);
+    float radius = distance(iris, vec2(x, y));
+    return enlarge(currentCoordinate, iris, radius, strength);
 }
 
 /**
@@ -238,11 +259,13 @@ out vec4 FragColor;
 
 // 左眼
 uniform vec2 leftEyeCenter;
+uniform vec2 leftEyeIris;
 uniform float leftEyeA;
 uniform float leftEyeB;
 
 // 右眼
 uniform vec2 rightEyeCenter;
+uniform vec2 rightEyeIris;
 uniform float rightEyeA;
 uniform float rightEyeB;
 
@@ -262,8 +285,8 @@ uniform float textureHeightPixelStep;
 
 void main() {
     // 大眼
-    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 25.0);
-    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 15.0);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeIris, leftEyeA, leftEyeB, 20.0);
+    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeIris, rightEyeA, rightEyeB, 20.0);
 
     // 瘦脸
     fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
