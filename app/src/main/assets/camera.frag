@@ -2,35 +2,35 @@
 
 precision highp float; // Define float precision
 
-// 圈内放大，intensity取值范围是0～1
-vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
+
+vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float strength)
 {
     float dis = distance(currentCoordinate, circleCenter);
     if (dis > radius) {
         return currentCoordinate;
     }
-    float k0 = intensity / 100.0;
+    float k0 = strength / 100.0;
     float k = 1.0 - k0 * (1.0 - pow(dis / radius, 2.0));
     float nx = (currentCoordinate.x - circleCenter.x) * k + circleCenter.x;
     float ny = (currentCoordinate.y - circleCenter.y) * k + circleCenter.y;
     return vec2(nx, ny);
 }
 
-// 圈内缩小，intensity取值范围是0～1
-vec2 shrink(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
-{
-    float currentDistance = distance(currentCoordinate, circleCenter);
-    if (currentDistance > radius) {
-        return currentCoordinate;
-    }
-
-    float weight = currentDistance / radius;
-    // weight 的指数可以是 2， 3， 4 等
-    weight = 1.0 - intensity * (1.0 - weight * weight);
-    weight = clamp(weight, 0.0001, 1.0);
-    currentCoordinate = circleCenter + (currentCoordinate - circleCenter) / weight;
-    return currentCoordinate;
-}
+//// 圈内缩小，intensity取值范围是0～1
+//vec2 shrink(vec2 currentCoordinate, vec2 circleCenter, float radius, float intensity)
+//{
+//    float currentDistance = distance(currentCoordinate, circleCenter);
+//    if (currentDistance > radius) {
+//        return currentCoordinate;
+//    }
+//
+//    float weight = currentDistance / radius;
+//    // weight 的指数可以是 2， 3， 4 等
+//    weight = 1.0 - intensity * (1.0 - weight * weight);
+//    weight = clamp(weight, 0.0001, 1.0);
+//    currentCoordinate = circleCenter + (currentCoordinate - circleCenter) / weight;
+//    return currentCoordinate;
+//}
 
 // 瘦脸
 vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float radius, float strength)
@@ -106,7 +106,7 @@ float gauthFunc(float maxValue, float centerLine, float changeRate, float x) {
   * x = h + a * cost
   * y = k + b * sint
  */
-vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float intensity) {
+vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float strength) {
     float dx = currentCoordinate.x - center.x;
     float dy = currentCoordinate.y - center.y;
     float checkDistence = (dx * dx) / (a * a) + (dy * dy) / (b * b);
@@ -116,16 +116,16 @@ vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float in
     float distanceToCenter = distance(currentCoordinate, center);
     float ovalX = center.x + a * dx / distanceToCenter;
     float ovalY = center.y + b * dy / distanceToCenter;
-    // float radius = distance(vec2(ovalX, ovalY), center);
-    return enlarge(currentCoordinate, center, max(a, b), intensity);
+    float radius = distance(vec2(ovalX, ovalY), center);
+    return enlarge(currentCoordinate, center, radius, strength);
 }
 
 /**
  * 美白
  */
-vec3 whitening(vec3 rgb, float intensity) {
+vec3 whitening(vec3 rgb, float strength) {
     vec3 yuv255 = rgbToYuv(rgb * 255.0);
-    yuv255.x = log(yuv255.x / 255.0 * (intensity - 1.0) + 1.0) / log(intensity) * 255.0;
+    yuv255.x = log(yuv255.x / 255.0 * (strength - 1.0) + 1.0) / log(strength) * 255.0;
     vec3 rgb255 = yuvToRgb(yuv255);
     return rgb255 / 255.0;
 }
@@ -134,13 +134,12 @@ vec3 whitening(vec3 rgb, float intensity) {
 /**
  * 磨皮
  */
-vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, float heightPixelStep, float radius) {
+vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, float heightPixelStep, float radius, float strength) {
     vec4 centerColor = texture(inputTexture, texCoord);
 
     if (isSkinColor(centerColor)) {
         float gauthMaxValue = 1.0;
         float gauthCenterLine = 0.0;
-        float gauthChangeRate = 6.0;
 
         vec4 colorSum = centerColor;
         float colorRateSum = 1.0;
@@ -154,7 +153,7 @@ vec4 skinSmooth(sampler2D inputTexture, vec2 texCoord, float widthPixelStep, flo
         vec2 leftVec = vec2(-widthPixelStep, 0.0);
         vec2 leftUpVec = vec2(-widthPixelStep, -heightPixelStep);
         for (float i = 1.0; i <= radius; i = i + 1.0) {
-            float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, gauthChangeRate, i);
+            float colorRate = gauthFunc(gauthMaxValue, gauthCenterLine, strength, i);
             vec2 u = texCoord + upVec * i;
             if (checkTextureCoord(u)) {
                 vec4 c = texture(inputTexture, u);
@@ -263,8 +262,8 @@ uniform float textureHeightPixelStep;
 
 void main() {
     // 大眼
-    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 20.0);
-    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 20.0);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 25.0);
+    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 15.0);
 
     // 瘦脸
     fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
@@ -274,7 +273,7 @@ void main() {
 
     // 磨皮
     if (skinSmoothSwitch == 1) {
-        vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 4.0);
+        vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 4.0, 6.0);
         outputColor = mix(outputColor, smoothColor, 0.6);
     }
 

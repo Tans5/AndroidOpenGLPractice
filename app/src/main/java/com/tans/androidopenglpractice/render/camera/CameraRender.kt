@@ -441,11 +441,7 @@ class CameraRender : IShapeRender {
 
             drawFacePoints(
                 initData = initData,
-                points =  arrayOf(
-                    faceData.leftEyeIrisF[0],
-                    faceData.leftEyeIrisF[6],
-                    faceData.leftEyeIrisF[12],
-                ),
+                points =  faceData.leftEyeIrisF,
                 xMin = xMin,
                 xMax = xMax,
                 yMin = yMin,
@@ -470,11 +466,7 @@ class CameraRender : IShapeRender {
 
             drawFacePoints(
                 initData = initData,
-                points = arrayOf(
-                    faceData.rightEyeIrisF[0],
-                    faceData.rightEyeIrisF[6],
-                    faceData.rightEyeIrisF[12],
-                ),
+                points = faceData.rightEyeIrisF,
                 xMin = xMin,
                 xMax = xMax,
                 yMin = yMin,
