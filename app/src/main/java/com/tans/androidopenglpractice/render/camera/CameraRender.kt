@@ -266,39 +266,27 @@ class CameraRender : IShapeRender {
     private fun beautify(initData: InitData, imageData: ImageData, faceData: FaceData?, rotation: Int) {
         // 大眼
         val leftEyeCenter = floatArrayOf(0.0f, 0.0f)
-        val leftEyeIris = floatArrayOf(0.0f, 0.0f)
         var leftEyeAxisA = 0f
         var leftEyeAxisB = 0f
         val rightEyeCenter = floatArrayOf(0.0f, 0.0f)
-        val rightEyeIris = floatArrayOf(0.0f, 0.0f)
         var rightEyeAxisA = 0f
         var rightEyeAxisB = 0f
         if (faceData != null && enlargeEyes) {
             val leftOval = faceData.leftEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
             leftEyeCenter[0] = leftOval.center.x
             leftEyeCenter[1] = leftOval.center.y
-            leftEyeAxisA = leftOval.a * 1.1f
-            leftEyeAxisB = leftOval.b * 1.1f
-            faceData.leftEyeIris[0].rotate((360 - rotation).toFloat()).apply {
-                leftEyeIris[0] = x
-                leftEyeIris[1] = y
-            }
+            leftEyeAxisA = leftOval.a
+            leftEyeAxisB = leftOval.b
             val rightOval = faceData.rightEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
             rightEyeCenter[0] = rightOval.center.x
             rightEyeCenter[1] = rightOval.center.y
-            rightEyeAxisA = rightOval.a * 1.1f
-            rightEyeAxisB = rightOval.b * 1.1f
-            faceData.rightEyeIris[0].rotate((360 - rotation).toFloat()).apply {
-                rightEyeIris[0] = x
-                rightEyeIris[1] = y
-            }
+            rightEyeAxisA = rightOval.a
+            rightEyeAxisB = rightOval.b
         }
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeCenter"), leftEyeCenter[0], leftEyeCenter[1])
-        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeIris"), leftEyeIris[0], leftEyeIris[1])
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeA"), leftEyeAxisA)
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftEyeB"), leftEyeAxisB)
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeCenter"), rightEyeCenter[0], rightEyeCenter[1])
-        GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeIris"), rightEyeIris[0], rightEyeIris[1])
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeA"), rightEyeAxisA)
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeB"), rightEyeAxisB)
 

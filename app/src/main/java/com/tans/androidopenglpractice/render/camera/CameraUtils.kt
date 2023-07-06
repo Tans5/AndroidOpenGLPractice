@@ -235,8 +235,8 @@ fun Array<Point>.computeFaceTextureOval(): Oval {
     val rightPoint = get(6)
     val topPoint = get(12)
     val centerPoint = Point((leftPoint.x + rightPoint.x) / 2.0f, (leftPoint.y + rightPoint.y) / 2.0f)
-    val a = leftPoint.distance(rightPoint) / 2.0f * 1.1f
-    val b = topPoint.distance(centerPoint) * 2.0f
+    val a = leftPoint.distance(rightPoint) / 2.0f * 1.2f
+    val b = topPoint.distance(centerPoint) * 1.8f
     return Oval(
         center = centerPoint,
         a = a,
