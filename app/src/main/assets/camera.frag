@@ -32,24 +32,6 @@ vec2 enlarge(vec2 currentCoordinate, vec2 circleCenter, float radius, float stre
 //    return currentCoordinate;
 //}
 
-// 瘦脸
-vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float radius, float strength)
-{
-    float k1 = distance(textureCoord, circleCenter);
-    if (k1 > radius) {
-        return textureCoord;
-    }
-
-    float k0 = 100.0 / strength;
-
-    float tx = pow((pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0) + k0 * pow(targetPosition.x - circleCenter.x, 2.0)), 2.0) * (targetPosition.x - circleCenter.x);
-    float ty = pow((pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0) + k0 * pow(targetPosition.y - circleCenter.y, 2.0)), 2.0) * (targetPosition.y - circleCenter.y);
-
-    float nx = textureCoord.x - tx * (1.0 - k1 / radius);
-    float ny = textureCoord.y - ty * (1.0 - k1 / radius);
-    return vec2(nx, ny);
-}
-
 
 vec3 rgbToYuv(vec3 rgb) {
     float r = rgb.x;
@@ -153,6 +135,24 @@ vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float st
     }
     float radius = distance(center, vec2(x, y));
     return enlarge(currentCoordinate, center, radius, strength);
+}
+
+// 瘦脸
+vec2 stretch(vec2 textureCoord, vec2 circleCenter, vec2 targetPosition, float radius, float strength)
+{
+    float k1 = distance(textureCoord, circleCenter);
+    if (k1 >= radius) {
+        return textureCoord;
+    }
+
+    float k0 = 100.0 / strength;
+
+    float tx = pow((pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.x - circleCenter.x, 2.0) + k0 * pow(targetPosition.x - circleCenter.x, 2.0)), 2.0) * (targetPosition.x - circleCenter.x);
+    float ty = pow((pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0)) / (pow(radius, 2.0) - pow(textureCoord.y - circleCenter.y, 2.0) + k0 * pow(targetPosition.y - circleCenter.y, 2.0)), 2.0) * (targetPosition.y - circleCenter.y);
+
+    float nx = textureCoord.x - tx * (1.0 - k1 / radius);
+    float ny = textureCoord.y - ty * (1.0 - k1 / radius);
+    return vec2(nx, ny);
 }
 
 /**
@@ -280,14 +280,15 @@ uniform float rightEyeA;
 uniform float rightEyeB;
 uniform float enlargeEyesStrength;
 
-// 美白
-uniform int whiteningSwitch;
-
 // 瘦脸
 uniform float thinRadius;
 uniform vec2 stretchCenter;
 uniform vec2 leftFaceThinCenter;
 uniform vec2 rightFaceThinCenter;
+uniform float thinStrength;
+
+// 美白
+uniform int whiteningSwitch;
 
 // 磨皮
 uniform int skinSmoothSwitch;
@@ -300,8 +301,8 @@ void main() {
     fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, enlargeEyesStrength);
 
     // 瘦脸
-    fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
-    fixedCoord = stretch(fixedCoord, rightFaceThinCenter, stretchCenter, thinRadius, 40.0);
+    fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, thinStrength);
+    fixedCoord = stretch(fixedCoord, rightFaceThinCenter, stretchCenter, thinRadius, thinStrength);
 
     vec4 outputColor = texture(Texture, fixedCoord);
 

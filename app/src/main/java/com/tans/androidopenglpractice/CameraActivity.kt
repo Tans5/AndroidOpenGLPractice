@@ -213,10 +213,6 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                     render.whitening = !render.whitening
                 }
 
-                findViewById<Button>(R.id.thin_face_bt).setOnClickListener {
-                    render.thinFace = !render.thinFace
-                }
-
                 findViewById<Button>(R.id.smooth_skin_bt).setOnClickListener {
                     render.smoothSkin = !render.smoothSkin
                 }
@@ -230,6 +226,22 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                     ) {
                         if (fromUser) {
                             render.setEnlargeEyesStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
+
+                val thinFaceSb = findViewById<SeekBar>(R.id.thin_face_sb)
+                thinFaceSb.progress = render.getThinFaceStrength().toInt()
+                thinFaceSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setThinFaceStrength(progress.toFloat())
                         }
                     }
                     override fun onStartTrackingTouch(seekBar: SeekBar?) {}

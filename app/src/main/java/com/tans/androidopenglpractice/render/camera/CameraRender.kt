@@ -50,14 +50,16 @@ class CameraRender : IShapeRender {
 
 
     private val enlargeEyesStrength: AtomicReference<Float> by lazy {
-        AtomicReference((MAX_ENLARGE_EYES_STRENGTH + MIN_ENLARGE_EYES_STRENGTH) / 2)
+        AtomicReference((MAX_ENLARGE_EYES_STRENGTH + MIN_ENLARGE_EYES_STRENGTH) / 2.0f)
+    }
+
+    private val thinFaceStrength: AtomicReference<Float> by lazy {
+        AtomicReference((MAX_THIN_FACE_STRENGTH + MIN_THIN_FACE_STRENGTH) / 2.0f)
     }
 
     var renderFaceFrame: Boolean = false
 
     var whitening: Boolean = true
-
-    var thinFace: Boolean = true
 
     var smoothSkin: Boolean = true
 
@@ -272,6 +274,15 @@ class CameraRender : IShapeRender {
 
     fun getEnlargeEyesStrength(): Float = transformInternalStrengthToInput(enlargeEyesStrength.get(), MIN_ENLARGE_EYES_STRENGTH, MAX_ENLARGE_EYES_STRENGTH)
 
+    fun setThinFaceStrength(
+        @FloatRange(0.0, 100.0)
+        strength: Float
+    ) {
+        thinFaceStrength.set(transformInputStrengthToInternal(strength, MIN_THIN_FACE_STRENGTH, MAX_THIN_FACE_STRENGTH))
+    }
+
+    fun getThinFaceStrength(): Float = transformInternalStrengthToInput(thinFaceStrength.get(), MIN_THIN_FACE_STRENGTH, MAX_THIN_FACE_STRENGTH)
+
     private fun transformInputStrengthToInternal(inputStrength: Float, minValue: Float, maxValue: Float): Float {
         val value = (maxValue - minValue) * inputStrength / 100.0f + minValue
         if (value < minValue) {
@@ -318,15 +329,12 @@ class CameraRender : IShapeRender {
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeB"), rightEyeAxisB)
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "enlargeEyesStrength"), enlargeEyesStrength.get())
 
-        // 美白
-        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whitening) 1 else 0)
-
         // 瘦脸
         var thinRadius = 0.0f
         val stretchCenter = floatArrayOf(0.0f, 0.0f)
         val leftFaceThinCenter = floatArrayOf(0.0f, 0.0f)
         val rightFaceThinCenter = floatArrayOf(0.0f, 0.0f)
-        if (faceData != null && thinFace) {
+        if (faceData != null && thinFaceStrength.get() > MIN_THIN_FACE_STRENGTH) {
             val thinData = faceData.computeThinFaceData(360 - rotation)
             thinRadius = thinData.thinRadius
             stretchCenter[0] = thinData.stretchCenter.x
@@ -340,7 +348,10 @@ class CameraRender : IShapeRender {
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "stretchCenter"), stretchCenter[0], stretchCenter[1])
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "leftFaceThinCenter"), leftFaceThinCenter[0], leftFaceThinCenter[1])
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightFaceThinCenter"), rightFaceThinCenter[0], rightFaceThinCenter[1])
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "thinStrength"), thinFaceStrength.get())
 
+        // 美白
+        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whitening) 1 else 0)
 
         // 磨皮
         GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "skinSmoothSwitch"), if (smoothSkin) 1 else 0)
@@ -603,5 +614,8 @@ class CameraRender : IShapeRender {
     companion object {
         private const val MIN_ENLARGE_EYES_STRENGTH: Float = 0.0f
         private const val MAX_ENLARGE_EYES_STRENGTH: Float = 30.0f
+
+        private const val MIN_THIN_FACE_STRENGTH: Float = 1.0f
+        private const val MAX_THIN_FACE_STRENGTH: Float = 60.0f
     }
 }
