@@ -57,11 +57,15 @@ class CameraRender : IShapeRender {
         AtomicReference((MAX_THIN_FACE_STRENGTH + MIN_THIN_FACE_STRENGTH) / 2.0f)
     }
 
+    private val whiteningStrength: AtomicReference<Float> by lazy {
+        AtomicReference((MAX_WHITENING_STRENGTH + MIN_WHITENING_STRENGTH) / 2.0f)
+    }
+
+    private val skinSmoothStrength: AtomicReference<Float> by lazy {
+        AtomicReference((MAX_SKIN_SMOOTH_STRENGTH + MIN_SKIN_SMOOTH_STRENGTH) / 2.0f)
+    }
+
     var renderFaceFrame: Boolean = false
-
-    var whitening: Boolean = true
-
-    var smoothSkin: Boolean = true
 
     override fun onSurfaceCreated(owner: MyOpenGLView, gl: GL10, config: EGLConfig) {
         super.onSurfaceCreated(owner, gl, config)
@@ -283,6 +287,24 @@ class CameraRender : IShapeRender {
 
     fun getThinFaceStrength(): Float = transformInternalStrengthToInput(thinFaceStrength.get(), MIN_THIN_FACE_STRENGTH, MAX_THIN_FACE_STRENGTH)
 
+    fun setWhiteningStrength(
+        @FloatRange(0.0, 100.0)
+        strength: Float
+    ) {
+        whiteningStrength.set(transformInputStrengthToInternal(strength, MIN_WHITENING_STRENGTH, MAX_WHITENING_STRENGTH))
+    }
+
+    fun getWhiteningStrength(): Float = transformInternalStrengthToInput(whiteningStrength.get(), MIN_WHITENING_STRENGTH, MAX_WHITENING_STRENGTH)
+
+    fun setSkinSmoothStrength(
+        @FloatRange(0.0, 100.0)
+        strength: Float
+    ) {
+        skinSmoothStrength.set(transformInputStrengthToInternal(strength, MIN_SKIN_SMOOTH_STRENGTH, MAX_SKIN_SMOOTH_STRENGTH))
+    }
+
+    fun getSkinSmoothStrength(): Float = transformInternalStrengthToInput(skinSmoothStrength.get(), MIN_SKIN_SMOOTH_STRENGTH, MAX_SKIN_SMOOTH_STRENGTH)
+
     private fun transformInputStrengthToInternal(inputStrength: Float, minValue: Float, maxValue: Float): Float {
         val value = (maxValue - minValue) * inputStrength / 100.0f + minValue
         if (value < minValue) {
@@ -351,12 +373,14 @@ class CameraRender : IShapeRender {
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "thinStrength"), thinFaceStrength.get())
 
         // 美白
-        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whitening) 1 else 0)
+        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whiteningStrength.get() > MIN_WHITENING_STRENGTH) 1 else 0)
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningStrength"), whiteningStrength.get())
 
         // 磨皮
-        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "skinSmoothSwitch"), if (smoothSkin) 1 else 0)
+        GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "skinSmoothSwitch"), if (skinSmoothStrength.get() > MIN_SKIN_SMOOTH_STRENGTH) 1 else 0)
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "textureWidthPixelStep"), 1.0f / imageData.width.toFloat())
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "textureHeightPixelStep"), 1.0f / imageData.height.toFloat())
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "skinSmoothStrength"), skinSmoothStrength.get())
     }
 
     /**
@@ -617,5 +641,11 @@ class CameraRender : IShapeRender {
 
         private const val MIN_THIN_FACE_STRENGTH: Float = 1.0f
         private const val MAX_THIN_FACE_STRENGTH: Float = 60.0f
+
+        private const val MIN_WHITENING_STRENGTH: Float = 1.0f
+        private const val MAX_WHITENING_STRENGTH: Float = 6.0f
+
+        private const val MIN_SKIN_SMOOTH_STRENGTH: Float = 0.0f
+        private const val MAX_SKIN_SMOOTH_STRENGTH: Float = 15.0f
     }
 }

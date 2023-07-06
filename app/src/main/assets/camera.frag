@@ -289,11 +289,13 @@ uniform float thinStrength;
 
 // 美白
 uniform int whiteningSwitch;
+uniform float whiteningStrength;
 
 // 磨皮
 uniform int skinSmoothSwitch;
 uniform float textureWidthPixelStep;
 uniform float textureHeightPixelStep;
+uniform float skinSmoothStrength;
 
 void main() {
     // 大眼
@@ -308,13 +310,13 @@ void main() {
 
     // 磨皮
     if (skinSmoothSwitch == 1) {
-        vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 4.0, 6.0);
+        vec4 smoothColor = skinSmooth(Texture, fixedCoord, textureWidthPixelStep, textureHeightPixelStep, 6.0, skinSmoothStrength);
         outputColor = mix(outputColor, smoothColor, 0.6);
     }
 
     // 美白
     if (whiteningSwitch == 1) {
-        outputColor = vec4(whitening(vec3(outputColor.x, outputColor.y, outputColor.z), 2.5), 1.0);
+        outputColor = vec4(whitening(vec3(outputColor.x, outputColor.y, outputColor.z), whiteningStrength), 1.0);
     }
     FragColor = outputColor;
 }

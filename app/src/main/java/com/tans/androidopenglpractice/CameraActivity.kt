@@ -208,14 +208,6 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.face_frame_bt).setOnClickListener {
                     render.renderFaceFrame = !render.renderFaceFrame
                 }
-
-                findViewById<Button>(R.id.whitening_bt).setOnClickListener {
-                    render.whitening = !render.whitening
-                }
-
-                findViewById<Button>(R.id.smooth_skin_bt).setOnClickListener {
-                    render.smoothSkin = !render.smoothSkin
-                }
                 val enlargeEyesSb = findViewById<SeekBar>(R.id.enlarge_eyes_sb)
                 enlargeEyesSb.progress = render.getEnlargeEyesStrength().toInt()
                 enlargeEyesSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -242,6 +234,38 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                     ) {
                         if (fromUser) {
                             render.setThinFaceStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
+
+                val whiteningSb = findViewById<SeekBar>(R.id.whitening_sb)
+                whiteningSb.progress = render.getWhiteningStrength().toInt()
+                whiteningSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setWhiteningStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
+
+                val smoothSkinSb = findViewById<SeekBar>(R.id.smooth_skin_sb)
+                smoothSkinSb.progress = render.getSkinSmoothStrength().toInt()
+                smoothSkinSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setSkinSmoothStrength(progress.toFloat())
                         }
                     }
                     override fun onStartTrackingTouch(seekBar: SeekBar?) {}

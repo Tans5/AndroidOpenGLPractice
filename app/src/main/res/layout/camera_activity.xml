@@ -71,6 +71,44 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Whitening: "/>
+
+            <androidx.appcompat.widget.AppCompatSeekBar
+                android:id="@+id/whitening_sb"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Smooth Skin: "/>
+
+            <androidx.appcompat.widget.AppCompatSeekBar
+                android:id="@+id/smooth_skin_sb"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
     <com.google.android.flexbox.FlexboxLayout
@@ -112,18 +150,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cam Change"/>
-
-        <Button
-            android:id="@+id/whitening_bt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Whitening"/>
-
-        <Button
-            android:id="@+id/smooth_skin_bt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Smooth Skin"/>
 
     </com.google.android.flexbox.FlexboxLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
