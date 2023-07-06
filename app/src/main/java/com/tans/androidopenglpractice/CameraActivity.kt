@@ -6,6 +6,7 @@ import android.graphics.PixelFormat
 import android.os.Bundle
 import android.os.SystemClock
 import android.widget.Button
+import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -208,10 +209,6 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                     render.renderFaceFrame = !render.renderFaceFrame
                 }
 
-                findViewById<Button>(R.id.enlarge_eyes_bt).setOnClickListener {
-                    render.enlargeEyes = !render.enlargeEyes
-                }
-
                 findViewById<Button>(R.id.whitening_bt).setOnClickListener {
                     render.whitening = !render.whitening
                 }
@@ -223,6 +220,21 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.smooth_skin_bt).setOnClickListener {
                     render.smoothSkin = !render.smoothSkin
                 }
+                val enlargeEyesSb = findViewById<SeekBar>(R.id.enlarge_eyes_sb)
+                enlargeEyesSb.progress = render.getEnlargeEyesStrength().toInt()
+                enlargeEyesSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setEnlargeEyesStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
             }
         }
     }

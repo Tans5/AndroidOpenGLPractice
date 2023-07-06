@@ -3,6 +3,7 @@ package com.tans.androidopenglpractice.render.camera
 import android.opengl.GLES31
 import android.opengl.GLUtils
 import android.opengl.Matrix
+import androidx.annotation.FloatRange
 import com.tans.androidopenglpractice.render.IShapeRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.glGenBuffers
@@ -14,6 +15,7 @@ import com.tans.androidopenglpractice.render.rgbaToBitmap
 import com.tans.androidopenglpractice.render.toGlBuffer
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -46,9 +48,12 @@ class CameraRender : IShapeRender {
 
     var mirror: Boolean = true
 
-    var renderFaceFrame: Boolean = false
 
-    var enlargeEyes: Boolean = true
+    private val enlargeEyesStrength: AtomicReference<Float> by lazy {
+        AtomicReference((MAX_ENLARGE_EYES_STRENGTH + MIN_ENLARGE_EYES_STRENGTH) / 2)
+    }
+
+    var renderFaceFrame: Boolean = false
 
     var whitening: Boolean = true
 
@@ -259,6 +264,28 @@ class CameraRender : IShapeRender {
         }
     }
 
+    fun setEnlargeEyesStrength(
+        @FloatRange(0.0, 100.0)
+        strength: Float) {
+        enlargeEyesStrength.set(transformInputStrengthToInternal(strength, MIN_ENLARGE_EYES_STRENGTH, MAX_ENLARGE_EYES_STRENGTH))
+    }
+
+    fun getEnlargeEyesStrength(): Float = transformInternalStrengthToInput(enlargeEyesStrength.get(), MIN_ENLARGE_EYES_STRENGTH, MAX_ENLARGE_EYES_STRENGTH)
+
+    private fun transformInputStrengthToInternal(inputStrength: Float, minValue: Float, maxValue: Float): Float {
+        val value = (maxValue - minValue) * inputStrength / 100.0f + minValue
+        if (value < minValue) {
+            return minValue
+        }
+        if (value > maxValue) {
+            return maxValue
+        }
+        return value
+    }
+
+    private fun transformInternalStrengthToInput(internalStrength: Float, minValue: Float, maxValue: Float): Float {
+        return (internalStrength - minValue) / (maxValue - minValue) * 100.0f
+    }
 
     /**
      * 美颜
@@ -271,7 +298,7 @@ class CameraRender : IShapeRender {
         val rightEyeCenter = floatArrayOf(0.0f, 0.0f)
         var rightEyeAxisA = 0f
         var rightEyeAxisB = 0f
-        if (faceData != null && enlargeEyes) {
+        if (faceData != null && enlargeEyesStrength.get() > MIN_ENLARGE_EYES_STRENGTH) {
             val leftOval = faceData.leftEyeIrisF.computeFaceTextureOval().rotate(360 - rotation)
             leftEyeCenter[0] = leftOval.center.x
             leftEyeCenter[1] = leftOval.center.y
@@ -289,6 +316,7 @@ class CameraRender : IShapeRender {
         GLES31.glUniform2f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeCenter"), rightEyeCenter[0], rightEyeCenter[1])
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeA"), rightEyeAxisA)
         GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "rightEyeB"), rightEyeAxisB)
+        GLES31.glUniform1f(GLES31.glGetUniformLocation(initData.cameraProgram, "enlargeEyesStrength"), enlargeEyesStrength.get())
 
         // 美白
         GLES31.glUniform1i(GLES31.glGetUniformLocation(initData.cameraProgram, "whiteningSwitch"), if (whitening) 1 else 0)
@@ -570,5 +598,10 @@ class CameraRender : IShapeRender {
         for (f in pointFilters) {
             f.reset()
         }
+    }
+
+    companion object {
+        private const val MIN_ENLARGE_EYES_STRENGTH: Float = 0.0f
+        private const val MAX_ENLARGE_EYES_STRENGTH: Float = 30.0f
     }
 }

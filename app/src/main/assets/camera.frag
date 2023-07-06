@@ -119,12 +119,17 @@ vec2 enlargeOval(vec2 currentCoordinate, vec2 center, float a, float b, float st
     float y1 = 0.0;
     float x2 = 0.0;
     float y2 = 0.0;
-    float minStep = 0.0001;
+    float minStep = 0.0003;
     if (abs(center.x - currentCoordinate.x) < minStep) {
-        float x1 = center.x;
-        float y1 = center.y + b;
-        float x2 = center.x;
-        float y2 = center.y - b;
+        x1 = center.x;
+        y1 = center.y + b;
+        x2 = center.x;
+        y2 = center.y - b;
+    } else if (abs(center.y - currentCoordinate.y) < minStep) {
+        x1 = center.x + a;
+        y1 = center.y;
+        x2 = center.x - a;
+        y2 = center.y;
     } else {
         float lineA = (currentCoordinate.y - center.y) / (currentCoordinate.x - center.x);
         float lineB = (currentCoordinate.y * center.x - currentCoordinate.x * center.y) / (center.x - currentCoordinate.x);
@@ -266,15 +271,14 @@ uniform sampler2D Texture;
 in vec2 TexCoord;
 out vec4 FragColor;
 
-// 左眼
+// 大眼
 uniform vec2 leftEyeCenter;
 uniform float leftEyeA;
 uniform float leftEyeB;
-
-// 右眼
 uniform vec2 rightEyeCenter;
 uniform float rightEyeA;
 uniform float rightEyeB;
+uniform float enlargeEyesStrength;
 
 // 美白
 uniform int whiteningSwitch;
@@ -292,8 +296,8 @@ uniform float textureHeightPixelStep;
 
 void main() {
     // 大眼
-    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, 30.0);
-    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, 30.0);
+    vec2 fixedCoord = enlargeOval(TexCoord, leftEyeCenter, leftEyeA, leftEyeB, enlargeEyesStrength);
+    fixedCoord = enlargeOval(fixedCoord, rightEyeCenter, rightEyeA, rightEyeB, enlargeEyesStrength);
 
     // 瘦脸
     fixedCoord = stretch(fixedCoord, leftFaceThinCenter, stretchCenter, thinRadius, 40.0);
