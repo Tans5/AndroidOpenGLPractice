@@ -1,6 +1,7 @@
 package com.tans.androidopenglpractice
 
 import android.Manifest
+import android.graphics.Color
 import android.graphics.ImageFormat
 import android.graphics.PixelFormat
 import android.os.Bundle
@@ -11,6 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.tans.androidopenglpractice.render.camera.CameraRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.camera.FaceData
@@ -38,6 +42,10 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
         setContentView(R.layout.camera_activity)
         val glView = findViewById<MyOpenGLView>(R.id.gl_view)
         val render = CameraRender()
