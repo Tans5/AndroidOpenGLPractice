@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.opengl.GLES31
 import android.opengl.GLUtils
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,7 +24,8 @@ class TextRender : IShapeRender {
         Paint().apply {
             isAntiAlias = true
             color = Color.BLACK
-             textAlign = Paint.Align.LEFT
+            textAlign = Paint.Align.LEFT
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
@@ -120,7 +122,7 @@ class TextRender : IShapeRender {
         val texture = glGenTextureAndSetDefaultParams()
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ALPHA_8)
         val canvas = Canvas(bitmap)
-        charPaint.textSize = max(width, height).toFloat()
+        charPaint.textSize = max(width, height).toFloat() * 1.1f
         val metrics = charPaint.fontMetrics
         val charWidth = charPaint.measureText(c.toString())
         val x = max((width - charWidth) / 2.0f, 0.0f)
