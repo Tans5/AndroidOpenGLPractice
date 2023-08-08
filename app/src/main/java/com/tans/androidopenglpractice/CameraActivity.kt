@@ -304,8 +304,8 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
     }
 
     private fun releaseTengine() {
-        TengineKitSdk.getInstance().releaseFaceDetect()
-        TengineKitSdk.getInstance().release()
+        TengineKitSdk.getInstance()?.releaseFaceDetect()
+        TengineKitSdk.getInstance()?.release()
     }
 
     private fun getCameraPoints(dataSource: FloatArray, offset: Int, pointSize: Int): Array<Point> {
