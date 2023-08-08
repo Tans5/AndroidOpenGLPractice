@@ -1,5 +1,6 @@
 package com.tans.androidopenglpractice.render
 
+import android.opengl.GLES30
 import android.opengl.GLES31
 import java.nio.Buffer
 import java.nio.ByteBuffer
@@ -69,4 +70,15 @@ fun glGenFrameBuffer(): Int {
     GLES31.glGenFramebuffers(1, buffer)
     buffer.position(0)
     return buffer.get()
+}
+
+fun glGenTextureAndSetDefaultParams(): Int {
+    val tex = glGenTexture()
+    GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, tex)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_REPEAT)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_REPEAT)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR)
+    GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR)
+    GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D)
+    return tex
 }

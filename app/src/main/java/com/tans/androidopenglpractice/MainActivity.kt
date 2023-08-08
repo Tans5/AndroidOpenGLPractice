@@ -12,6 +12,7 @@ import com.tans.androidopenglpractice.render.CubeRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.SimpleTriangleRender
 import com.tans.androidopenglpractice.render.SquareRender
+import com.tans.androidopenglpractice.render.TextRender
 
 class MainActivity : AppCompatActivity() {
 
@@ -40,6 +41,12 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.cube_bt).setOnClickListener {
             if (glView.shapeRender !is CubeRender) {
                 glView.shapeRender = CubeRender()
+            }
+        }
+
+        findViewById<Button>(R.id.text_bt).setOnClickListener {
+            if (glView.shapeRender !is TextRender) {
+                glView.shapeRender = TextRender()
             }
         }
 
