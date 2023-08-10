@@ -69,6 +69,13 @@
             android:maxLines="1"/>
 
         <Button
+            android:id="@+id/draw_inst_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Draw Inst"
+            android:maxLines="1" />
+
+        <Button
             android:id="@+id/camera_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
