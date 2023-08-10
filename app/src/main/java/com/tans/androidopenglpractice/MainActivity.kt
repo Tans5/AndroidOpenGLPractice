@@ -13,6 +13,7 @@ import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.SimpleTriangleRender
 import com.tans.androidopenglpractice.render.SquareRender
 import com.tans.androidopenglpractice.render.TextRender
+import com.tans.androidopenglpractice.render.TextureArrayRender
 
 class MainActivity : AppCompatActivity() {
 
@@ -47,6 +48,12 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.text_bt).setOnClickListener {
             if (glView.shapeRender !is TextRender) {
                 glView.shapeRender = TextRender()
+            }
+        }
+
+        findViewById<Button>(R.id.multi_tex_bt).setOnClickListener {
+            if (glView.shapeRender !is TextureArrayRender) {
+                glView.shapeRender = TextureArrayRender()
             }
         }
 

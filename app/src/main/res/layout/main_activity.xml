@@ -62,6 +62,13 @@
             android:text="Text"/>
 
         <Button
+            android:id="@+id/multi_tex_bt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Multi Tex"
+            android:maxLines="1"/>
+
+        <Button
             android:id="@+id/camera_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
