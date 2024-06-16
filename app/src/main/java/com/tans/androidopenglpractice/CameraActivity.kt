@@ -1,15 +1,20 @@
 package com.tans.androidopenglpractice
 
 import android.Manifest
+import android.graphics.Color
 import android.graphics.ImageFormat
 import android.graphics.PixelFormat
 import android.os.Bundle
 import android.os.SystemClock
 import android.widget.Button
+import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.tans.androidopenglpractice.render.camera.CameraRender
 import com.tans.androidopenglpractice.render.MyOpenGLView
 import com.tans.androidopenglpractice.render.camera.FaceData
@@ -37,6 +42,10 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
         setContentView(R.layout.camera_activity)
         val glView = findViewById<MyOpenGLView>(R.id.gl_view)
         val render = CameraRender()
@@ -207,22 +216,69 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
                 findViewById<Button>(R.id.face_frame_bt).setOnClickListener {
                     render.renderFaceFrame = !render.renderFaceFrame
                 }
+                val enlargeEyesSb = findViewById<SeekBar>(R.id.enlarge_eyes_sb)
+                enlargeEyesSb.progress = render.getEnlargeEyesStrength().toInt()
+                enlargeEyesSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setEnlargeEyesStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
 
-                findViewById<Button>(R.id.enlarge_eyes_bt).setOnClickListener {
-                    render.enlargeEyes = !render.enlargeEyes
-                }
+                val thinFaceSb = findViewById<SeekBar>(R.id.thin_face_sb)
+                thinFaceSb.progress = render.getThinFaceStrength().toInt()
+                thinFaceSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setThinFaceStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
 
-                findViewById<Button>(R.id.whitening_bt).setOnClickListener {
-                    render.whitening = !render.whitening
-                }
+                val whiteningSb = findViewById<SeekBar>(R.id.whitening_sb)
+                whiteningSb.progress = render.getWhiteningStrength().toInt()
+                whiteningSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setWhiteningStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
 
-                findViewById<Button>(R.id.thin_face_bt).setOnClickListener {
-                    render.thinFace = !render.thinFace
-                }
-
-                findViewById<Button>(R.id.smooth_skin_bt).setOnClickListener {
-                    render.smoothSkin = !render.smoothSkin
-                }
+                val smoothSkinSb = findViewById<SeekBar>(R.id.smooth_skin_sb)
+                smoothSkinSb.progress = render.getSkinSmoothStrength().toInt()
+                smoothSkinSb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        if (fromUser) {
+                            render.setSkinSmoothStrength(progress.toFloat())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
             }
         }
     }
@@ -248,8 +304,8 @@ class CameraActivity : AppCompatActivity(), CoroutineScope by CoroutineScope(Dis
     }
 
     private fun releaseTengine() {
-        TengineKitSdk.getInstance().releaseFaceDetect()
-        TengineKitSdk.getInstance().release()
+        TengineKitSdk.getInstance()?.releaseFaceDetect()
+        TengineKitSdk.getInstance()?.release()
     }
 
     private fun getCameraPoints(dataSource: FloatArray, offset: Int, pointSize: Int): Array<Point> {
